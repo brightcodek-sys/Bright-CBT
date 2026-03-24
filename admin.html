@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CBT | Master Admin</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: white; padding: 20px; }
+        .admin-card { background: #16213e; padding: 30px; border-radius: 15px; max-width: 700px; margin: auto; border: 1px solid #0f3460; }
+        h1 { color: #4ecca3; text-align: center; }
+        .zone { background: #0f3460; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 5px; border: none; }
+        button { background: #e94560; color: white; font-weight: bold; cursor: pointer; }
+        button:hover { background: #ff4d6d; }
+        #status { color: #4ecca3; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <h1>🛡️ CBT Admin Portal</h1>
+    
+    <div class="zone">
+        <h3>1. Upload Questions (.xlsx)</h3>
+        <input type="file" id="upload-file" accept=".xlsx">
+        <button onclick="processExcel()">Parse & Preview</button>
+    </div>
+
+    <div class="zone">
+        <h3>2. Deploy to Database</h3>
+        <p id="count">Questions found: 0</p>
+        <button id="deploy-btn" onclick="deployToFirebase()" disabled>Push to Cloud</button>
+    </div>
+
+    <div class="zone">
+        <h3>3. Add Student Account</h3>
+        <input type="text" id="stu-name" placeholder="Student Name">
+        <input type="text" id="stu-id" placeholder="Admission Number (Login ID)">
+        <button onclick="addStudent()">Add Student to System</button>
+    </div>
+
+    <div id="status">Ready for commands...</div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // PASTE YOUR FIREBASE CONFIG HERE
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let parsedQuestions = [];
+
+  // EXCEL PROCESSING LOGIC
+  window.processExcel = function() {
+      const file = document.getElementById('upload-file').files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          parsedQuestions = XLSX.utils.sheet_to_json(sheet);
+          
+          document.getElementById('count').innerText = `Questions found: ${parsedQuestions.length}`;
+          document.getElementById('deploy-btn').disabled = false;
+          document.getElementById('status').innerText = "Excel parsed successfully!";
+      };
+      reader.readAsArrayBuffer(file);
+  }
+
+  // FIREBASE DEPLOYMENT
+  window.deployToFirebase = async function() {
+      document.getElementById('status').innerText = "Uploading... please wait.";
+      try {
+          for (let q of parsedQuestions) {
+              await addDoc(collection(db, "questions"), {
+                  text: q.Question,
+                  options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD],
+                  answer: q.Answer,
+                  timestamp: new Date()
+              });
+          }
+          document.getElementById('status').innerText = "✅ ALL QUESTIONS DEPLOYED!";
+      } catch (err) {
+          document.getElementById('status').innerText = "❌ Error: " + err.message;
+      }
+  }
+
+  // ADD STUDENT
+  window.addStudent = async function() {
+      const name = document.getElementById('stu-name').value;
+      const id = document.getElementById('stu-id').value;
+      if(!name || !id) return alert("Fill all fields");
+
+      await setDoc(doc(db, "students", id), {
+          studentName: name,
+          loginID: id,
+          hasFinished: false,
+          score: 0
+      });
+      document.getElementById('status').innerText = `Student ${name} Registered!`;
+  }
+</script>
+
+</body>
+</html>
