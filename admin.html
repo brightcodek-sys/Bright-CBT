@@ -2,114 +2,156 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CBT | Master Admin</title>
+    <title>Bright-CBT | Master Admin</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: white; padding: 20px; }
-        .admin-card { background: #16213e; padding: 30px; border-radius: 15px; max-width: 700px; margin: auto; border: 1px solid #0f3460; }
-        h1 { color: #4ecca3; text-align: center; }
-        .zone { background: #0f3460; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        input, button { width: 100%; padding: 12px; margin-top: 10px; border-radius: 5px; border: none; }
-        button { background: #e94560; color: white; font-weight: bold; cursor: pointer; }
-        button:hover { background: #ff4d6d; }
-        #status { color: #4ecca3; margin-top: 10px; text-align: center; }
+        :root { --accent: #4ecca3; --bg: #1a1a2e; --panel: #16213e; --text: #eeeeee; --danger: #e94560; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .admin-container { width: 100%; max-width: 800px; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid var(--panel); padding-bottom: 10px; }
+        .header h1 { color: var(--accent); margin: 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid #0f3460; }
+        h3 { margin-top: 0; color: var(--accent); font-size: 18px; border-bottom: 1px solid #0f3460; padding-bottom: 10px; }
+        label { display: block; margin: 10px 0 5px; font-size: 13px; color: #999; }
+        input { width: 100%; padding: 10px; background: #0f3460; border: 1px solid #1a1a2e; color: white; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 5px; }
+        .btn-push { background: var(--accent); color: #1a1a2e; }
+        .btn-push:disabled { background: #333; color: #777; cursor: not-allowed; }
+        .btn-reg { background: var(--danger); color: white; }
+        #status-box { margin-top: 20px; padding: 15px; background: #0f3460; border-radius: 8px; text-align: center; font-family: monospace; }
+        .scroll-list { height: 150px; overflow-y: auto; background: #0b1221; padding: 10px; border-radius: 6px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div class="admin-card">
-    <h1>🛡️ CBT Admin Portal</h1>
-    
-    <div class="zone">
-        <h3>1. Upload Questions (.xlsx)</h3>
-        <input type="file" id="upload-file" accept=".xlsx">
-        <button onclick="processExcel()">Parse & Preview</button>
+<div class="admin-container">
+    <div class="header">
+        <h1>🛡️ BRIGHT-CBT CORE</h1>
+        <p>Advanced Academic Assessment & Cloud Control</p>
     </div>
 
-    <div class="zone">
-        <h3>2. Deploy to Database</h3>
-        <p id="count">Questions found: 0</p>
-        <button id="deploy-btn" onclick="deployToFirebase()" disabled>Push to Cloud</button>
+    <div class="grid">
+        <div class="card">
+            <h3>📦 Deploy Examination</h3>
+            <label>Exam Name (e.g., MATH_JSS1_CA2)</label>
+            <input type="text" id="exam-tag" placeholder="Enter Unique Exam Title">
+            
+            <label>Select Excel Data (.xlsx)</label>
+            <input type="file" id="excel-file" accept=".xlsx">
+            
+            <button class="btn-push" id="process-btn" onclick="parseFile()">1. Parse Excel</button>
+            <button class="btn-push" id="deploy-btn" onclick="deployExam()" disabled style="margin-top:10px; background:#f0b90b;">2. Push to Cloud</button>
+            <p id="q-count" style="font-size:12px; margin-top:10px;">Questions parsed: 0</p>
+        </div>
+
+        <div class="card">
+            <h3>👥 Student Enrollment</h3>
+            <label>Student Full Name</label>
+            <input type="text" id="stu-name" placeholder="John Doe">
+            
+            <label>Admission ID (Login Key)</label>
+            <input type="text" id="stu-id" placeholder="JSS1/2026/001">
+            
+            <button class="btn-reg" onclick="registerStudent()">Register to System</button>
+            
+            <label>Recently Registered:</label>
+            <div id="stu-log" class="scroll-list">Ready...</div>
+        </div>
     </div>
 
-    <div class="zone">
-        <h3>3. Add Student Account</h3>
-        <input type="text" id="stu-name" placeholder="Student Name">
-        <input type="text" id="stu-id" placeholder="Admission Number (Login ID)">
-        <button onclick="addStudent()">Add Student to System</button>
-    </div>
-
-    <div id="status">Ready for commands...</div>
+    <div id="status-box">System Status: Idle</div>
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // PASTE YOUR FIREBASE CONFIG HERE
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
+    // --- PASTE YOUR FIREBASE CONFIG HERE ---
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  let parsedQuestions = [];
+    let parsedData = [];
 
-  // EXCEL PROCESSING LOGIC
-  window.processExcel = function() {
-      const file = document.getElementById('upload-file').files[0];
-      const reader = new FileReader();
-      reader.onload = function(e) {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, {type: 'array'});
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          parsedQuestions = XLSX.utils.sheet_to_json(sheet);
-          
-          document.getElementById('count').innerText = `Questions found: ${parsedQuestions.length}`;
-          document.getElementById('deploy-btn').disabled = false;
-          document.getElementById('status').innerText = "Excel parsed successfully!";
-      };
-      reader.readAsArrayBuffer(file);
-  }
+    // FILE PARSING
+    window.parseFile = function() {
+        const file = document.getElementById('excel-file').files[0];
+        if(!file) return alert("Select a file!");
 
-  // FIREBASE DEPLOYMENT
-  window.deployToFirebase = async function() {
-      document.getElementById('status').innerText = "Uploading... please wait.";
-      try {
-          for (let q of parsedQuestions) {
-              await addDoc(collection(db, "questions"), {
-                  text: q.Question,
-                  options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD],
-                  answer: q.Answer,
-                  timestamp: new Date()
-              });
-          }
-          document.getElementById('status').innerText = "✅ ALL QUESTIONS DEPLOYED!";
-      } catch (err) {
-          document.getElementById('status').innerText = "❌ Error: " + err.message;
-      }
-  }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            parsedData = XLSX.utils.sheet_to_json(sheet);
+            
+            document.getElementById('q-count').innerText = `Questions parsed: ${parsedData.length}`;
+            document.getElementById('deploy-btn').disabled = false;
+            updateStatus("Excel file parsed. Ready for deployment.");
+        };
+        reader.readAsArrayBuffer(file);
+    };
 
-  // ADD STUDENT
-  window.addStudent = async function() {
-      const name = document.getElementById('stu-name').value;
-      const id = document.getElementById('stu-id').value;
-      if(!name || !id) return alert("Fill all fields");
+    // CLOUD DEPLOYMENT
+    window.deployExam = async function() {
+        const tag = document.getElementById('exam-tag').value.trim();
+        if(!tag) return alert("Give this exam a name!");
 
-      await setDoc(doc(db, "students", id), {
-          studentName: name,
-          loginID: id,
-          hasFinished: false,
-          score: 0
-      });
-      document.getElementById('status').innerText = `Student ${name} Registered!`;
-  }
+        updateStatus(`🚀 Deploying ${tag}...`);
+        try {
+            for (let q of parsedData) {
+                await addDoc(collection(db, "questions"), {
+                    examID: tag,
+                    question: q.Question,
+                    options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD],
+                    answer: q.Answer,
+                    timestamp: new Date()
+                });
+            }
+            updateStatus(`✅ SUCCESSFULLY DEPLOYED: ${tag}`);
+            document.getElementById('deploy-btn').disabled = true;
+        } catch (e) {
+            updateStatus("❌ ERROR: " + e.message);
+        }
+    };
+
+    // STUDENT REGISTRATION
+    window.registerStudent = async function() {
+        const name = document.getElementById('stu-name').value.trim();
+        const id = document.getElementById('stu-id').value.trim();
+        if(!name || !id) return alert("Name and ID required.");
+
+        updateStatus(`Registering ${name}...`);
+        try {
+            await setDoc(doc(db, "students", id), {
+                studentName: name,
+                loginID: id,
+                hasFinished: false,
+                score: 0,
+                regDate: new Date()
+            });
+            const log = document.getElementById('stu-log');
+            log.innerHTML = `<div>[SUCCESS] ${name} (${id})</div>` + log.innerHTML;
+            updateStatus(`Student ${id} is now active.`);
+            document.getElementById('stu-name').value = "";
+            document.getElementById('stu-id').value = "";
+        } catch (e) {
+            updateStatus("❌ REG ERROR: " + e.message);
+        }
+    };
+
+    function updateStatus(msg) {
+        document.getElementById('status-box').innerText = "System Status: " + msg;
+    }
 </script>
 
 </body>
