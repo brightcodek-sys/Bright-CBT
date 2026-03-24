@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bright-CBT | Examination in Progress</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f9; margin: 0; display: flex; justify-content: center; padding: 40px; }
+        .exam-container { background: white; max-width: 700px; width: 100%; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 30px; }
+        .q-number { font-weight: bold; color: #1a73e8; font-size: 1.2rem; }
+        .question-text { font-size: 1.4rem; color: #2c3e50; margin-bottom: 30px; line-height: 1.4; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .opt-btn { padding: 18px; border: 2px solid #e0e0e0; border-radius: 12px; background: white; cursor: pointer; text-align: left; font-size: 1rem; transition: 0.2s; }
+        .opt-btn:hover { border-color: #1a73e8; background: #f8fbff; }
+        .progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-top: 40px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #1a73e8; width: 0%; transition: 0.4s; }
+    </style>
+</head>
+<body>
+
+<div class="exam-container" id="main-content">
+    <div class="header">
+        <span class="q-number" id="q-count">Question 1</span>
+        <span id="timer" style="color: #d93025; font-weight: bold;">00:00</span>
+    </div>
+
+    <div id="exam-ui">
+        <div class="question-text" id="q-text">Loading exam data...</div>
+        <div class="options-grid" id="options-box"></div>
+        <div class="progress-bar"><div class="progress-fill" id="p-fill"></div></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // --- USE YOUR FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 1. GET URL PARAMETERS
+    const urlParams = new URLSearchParams(window.location.search);
+    const studentID = urlParams.get('student');
+    const examID = urlParams.get('exam');
+
+    let questions = [];
+    let currentIndex = 0;
+    let score = 0;
+
+    async function loadExam() {
+        if(!studentID || !examID) {
+            alert("Invalid session. Returning to login.");
+            window.location.href = "index.html";
+            return;
+        }
+
+        // 2. FETCH ONLY QUESTIONS FOR THIS SPECIFIC EXAM
+        const q = query(collection(db, "questions"), where("examID", "==", examID));
+        const querySnapshot = await getDocs(q);
+        
+        querySnapshot.forEach((doc) => {
+            questions.push(doc.data());
+        });
+
+        if(questions.length === 0) {
+            document.getElementById('q-text').innerText = "No questions found for this exam.";
+            return;
+        }
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const currentQ = questions[currentIndex];
+        document.getElementById('q-count').innerText = `Question ${currentIndex + 1} of ${questions.length}`;
+        document.getElementById('q-text').innerText = currentQ.question;
+        
+        const box = document.getElementById('options-box');
+        box.innerHTML = "";
+        
+        currentQ.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = "opt-btn";
+            btn.innerText = opt;
+            btn.onclick = () => handleChoice(opt, currentQ.answer);
+            box.appendChild(btn);
+        });
+
+        const progress = ((currentIndex + 1) / questions.length) * 100;
+        document.getElementById('p-fill').style.width = progress + "%";
+    }
+
+    async function handleChoice(selected, correct) {
+        if(selected === correct) score += 1; // You can change this to 10 points each
+
+        if(currentIndex < questions.length - 1) {
+            currentIndex++;
+            renderQuestion();
+        } else {
+            submitResults();
+        }
+    }
+
+    async function submitResults() {
+        document.getElementById('exam-ui').innerHTML = "<h2>Submitting... Please do not close the window.</h2>";
+        
+        try {
+            const stuRef = doc(db, "students", studentID);
+            await updateDoc(stuRef, {
+                hasFinished: true,
+                score: score,
+                examTaken: examID,
+                finishTime: new Date()
+            });
+            
+            document.getElementById('main-content').innerHTML = `
+                <div style="text-align:center">
+                    <h1 style="color:#2ecc71">✔ Examination Complete</h1>
+                    <p>Your responses have been uploaded to the Master Admin.</p>
+                    <button onclick="window.location.href='index.html'" style="padding:10px 20px; cursor:pointer">Exit Portal</button>
+                </div>
+            `;
+        } catch (e) {
+            alert("Submission error. Contact your teacher.");
+        }
+    }
+
+    loadExam();
+</script>
+
+</body>
+</html>
+
