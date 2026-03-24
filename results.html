@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bright-CBT | Live Result Master</title>
+    <style>
+        :root { --dark-bg: #0b0e11; --card-bg: #15191d; --text-gray: #848e9c; --gold: #f0b90b; --green: #0ecb81; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--dark-bg); color: white; padding: 30px; }
+        .dashboard { max-width: 1000px; margin: auto; background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid #2b3139; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2b3139; padding-bottom: 20px; margin-bottom: 20px; }
+        h1 { color: var(--gold); margin: 0; font-size: 22px; }
+        
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; }
+        select { background: #1e2329; color: white; border: 1px solid #474d57; padding: 8px 12px; border-radius: 4px; outline: none; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; color: var(--text-gray); font-size: 13px; text-transform: uppercase; padding: 12px; border-bottom: 1px solid #2b3139; }
+        td { padding: 15px; border-bottom: 1px solid #2b3139; font-size: 14px; }
+        
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .done { background: rgba(14, 203, 129, 0.15); color: var(--green); }
+        .live { background: rgba(240, 185, 11, 0.15); color: var(--gold); }
+        .score-val { font-family: 'Courier New', monospace; font-weight: bold; font-size: 16px; }
+        .pass { color: var(--green); }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="header">
+        <h1>📈 LIVE EXAMINATION MONITOR</h1>
+        <div class="controls">
+            <select id="exam-filter" onchange="filterResults()">
+                <option value="ALL">Show All Exams</option>
+            </select>
+            <button onclick="exportData()" style="background:var(--gold); border:none; border-radius:4px; padding:8px 15px; cursor:pointer; font-weight:bold;">Export CSV</button>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Admission ID</th>
+                <th>Exam Taken</th>
+                <th>Status</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody id="results-body">
+            <!-- Data injected here -->
+        </tbody>
+    </table>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Listen for all student updates
+    const q = query(collection(db, "students"), orderBy("regDate", "desc"));
+    
+    let allStudents = [];
+
+    onSnapshot(q, (snapshot) => {
+        allStudents = [];
+        const examNames = new Set();
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            allStudents.push(data);
+            if(data.examTaken) examNames.add(data.examTaken);
+        });
+
+        updateFilterDropdown(examNames);
+        renderTable("ALL");
+    });
+
+    function updateFilterDropdown(exams) {
+        const filter = document.getElementById('exam-filter');
+        const currentVal = filter.value;
+        filter.innerHTML = '<option value="ALL">Show All Exams</option>';
+        exams.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = name;
+            filter.appendChild(opt);
+        });
+        filter.value = currentVal;
+    }
+
+    window.filterResults = function() {
+        renderTable(document.getElementById('exam-filter').value);
+    };
+
+    function renderTable(filter) {
+        const tbody = document.getElementById('results-body');
+        tbody.innerHTML = "";
+
+        const filtered = filter === "ALL" ? allStudents : allStudents.filter(s => s.examTaken === filter);
+
+        filtered.forEach(s => {
+            const row = document.createElement('tr');
+            const statusClass = s.hasFinished ? "done" : "live";
+            const statusText = s.hasFinished ? "COMPLETED" : "TESTING...";
+            const scoreClass = s.score >= 8 ? "pass" : ""; // Assuming 10 is max
+
+            row.innerHTML = `
+                <td>${s.studentName}</td>
+                <td><code>${s.loginID}</code></td>
+                <td>${s.examTaken || "Not Started"}</td>
+                <td><span class="status ${statusClass}">${statusText}</span></td>
+                <td class="score-val ${scoreClass}">${s.hasFinished ? s.score : '--'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Export to Excel-compatible CSV
+    window.exportData = function() {
+        let csv = "Name,ID,Exam,Score\n";
+        allStudents.forEach(s => {
+            csv += `${s.studentName},${s.loginID},${s.examTaken || 'N/A'},${s.score}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'Bright-CBT-Results.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+</script>
+
+</body>
+</html>
+
