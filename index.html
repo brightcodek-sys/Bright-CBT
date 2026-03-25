@@ -2,133 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Student Entry</title>
+    <title>Bright-CBT Admin</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
-        :root { --cobalt: #2c3e50; --azure: #3498db; --emerald: #2ecc71; --glass: rgba(255, 255, 255, 0.9); }
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; }
-        .login-card { background: var(--glass); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 380px; backdrop-filter: blur(10px); text-align: center; }
-        h1 { color: var(--cobalt); margin-bottom: 5px; letter-spacing: -1px; }
-        .tagline { color: #7f8c8d; font-size: 14px; margin-bottom: 30px; }
-        
-        .input-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; font-size: 12px; font-weight: bold; color: var(--cobalt); margin-bottom: 5px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; transition: 0.3s; box-sizing: border-box; }
-        input:focus, select:focus { border-color: var(--azure); outline: none; box-shadow: 0 0 8px rgba(52, 152, 219, 0.3); }
-        
-        button { width: 100%; padding: 15px; background: var(--cobalt); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-        button:hover { background: var(--azure); transform: translateY(-2px); }
-        
-        .hidden { display: none; }
-        #status-msg { margin-top: 15px; font-size: 14px; font-weight: 500; }
-        .error { color: #e74c3c; }
-        .success { color: var(--emerald); }
+        body { background: #1a1a2e; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #16213e; padding: 20px; border-radius: 10px; margin-bottom: 20px; max-width: 500px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { padding: 10px; background: #4ecca3; border: none; cursor: pointer; font-weight: bold; width: 100%; }
     </style>
 </head>
 <body>
-
-<div class="login-card">
-    <h1>BRIGHT-CBT</h1>
-    <div class="tagline">Authorized Student Access Point</div>
-
-    <!-- STAGE 1: IDENTITY VERIFICATION -->
-    <div id="step-1">
-        <div class="input-group">
-            <label>Admission Number</label>
-            <input type="text" id="stu-id" placeholder="e.g. JSS1/2026/001">
-        </div>
-        <button onclick="verifyStudent()">Verify Identity</button>
+    <h1>Admin Panel</h1>
+    <div class="card">
+        <h3>1. Register Student</h3>
+        <input type="text" id="n" placeholder="Name">
+        <input type="text" id="i" placeholder="Admission ID">
+        <button onclick="reg()">Register</button>
     </div>
-
-    <!-- STAGE 2: EXAM SELECTION -->
-    <div id="step-2" class="hidden">
-        <div class="input-group">
-            <label>Available Examinations</label>
-            <select id="exam-list">
-                <option value="">-- Select Subject --</option>
-            </select>
-        </div>
-        <button onclick="launchExam()" style="background: var(--emerald);">Launch Examination</button>
+    <div class="card">
+        <h3>2. Upload Exam (Excel)</h3>
+        <input type="text" id="title" placeholder="Exam Name (e.g. MATH_J1)">
+        <input type="file" id="f">
+        <button onclick="up()">Upload Questions</button>
     </div>
-
-    <div id="status-msg"></div>
-</div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    // --- USE YOUR FIREBASE CONFIG ---
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
+        authDomain: "bright-cbt.firebaseapp.com",
+        projectId: "bright-cbt",
+        storageBucket: "bright-cbt.firebasestorage.app",
+        messagingSenderId: "834402482237",
+        appId: "1:834402482237:web:63c717f80cd154dd1cd254"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    let currentStudentID = "";
-
-    // VERIFY IF STUDENT EXISTS
-    window.verifyStudent = async function() {
-        const id = document.getElementById('stu-id').value.trim();
-        const msg = document.getElementById('status-msg');
-        
-        if(!id) return;
-        msg.innerText = "🔍 Verifying...";
-
-        try {
-            const stuRef = doc(db, "students", id);
-            const stuSnap = await getDoc(stuRef);
-
-            if (stuSnap.exists()) {
-                if(stuSnap.data().hasFinished) {
-                    msg.innerHTML = "<span class='error'>Access Denied: Exam already submitted.</span>";
-                } else {
-                    currentStudentID = id;
-                    loadAvailableExams();
-                }
-            } else {
-                msg.innerHTML = "<span class='error'>ID not found. Contact Admin.</span>";
-            }
-        } catch (e) {
-            msg.innerText = "Connection Error.";
-        }
-    };
-
-    // FETCH UNIQUE EXAM NAMES FROM FIREBASE
-    async function loadAvailableExams() {
-        const qSnap = await getDocs(collection(db, "questions"));
-        const exams = new Set();
-        qSnap.forEach(doc => exams.add(doc.data().examID));
-
-        const select = document.getElementById('exam-list');
-        exams.forEach(examName => {
-            let opt = document.createElement('option');
-            opt.value = examName;
-            opt.innerText = examName;
-            select.appendChild(opt);
-        });
-
-        document.getElementById('step-1').classList.add('hidden');
-        document.getElementById('step-2').classList.remove('hidden');
-        document.getElementById('status-msg').innerHTML = "<span class='success'>Welcome, identity confirmed.</span>";
+    window.reg = async () => {
+        const id = document.getElementById('i').value;
+        await setDoc(doc(db, "students", id), { studentName: document.getElementById('n').value, loginID: id, hasFinished: false, score: 0, regDate: new Date() });
+        alert("Done!");
     }
 
-    // REDIRECT TO THE EXAM PAGE
-    window.launchExam = function() {
-        const selected = document.getElementById('exam-list').value;
-        if(!selected) return alert("Please select an exam to proceed.");
-        
-        // Pass the Student ID and Exam ID to the next page via URL
-        window.location.href = `exam.html?student=${currentStudentID}&exam=${selected}`;
-    };
+    window.up = async () => {
+        const file = document.getElementById('f').files[0];
+        const title = document.getElementById('title').value;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            for(let q of json) {
+                await addDoc(collection(db, "questions"), { examID: title, question: q.Question, options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD], answer: q.Answer });
+            }
+            alert("Uploaded!");
+        };
+        reader.readAsArrayBuffer(file);
+    }
 </script>
-
 </body>
 </html>
-
