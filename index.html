@@ -3,73 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT Login</title>
+    <title>Bright-CBT | Student Login</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; }
-        .login-card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #007bff; margin-bottom: 10px; }
+        p { color: #666; font-size: 14px; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-transform: uppercase; } /* Auto uppercase for Reg No */
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
         button:hover { background: #0056b3; }
+        .footer-links { margin-top: 20px; font-size: 13px; }
+        .footer-links a { color: #28a745; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <h2>Bright-CBT</h2>
-        <p>Enter Admission ID to Start</p>
-        <input type="text" id="studentID" placeholder="e.g. JSS1/001">
-        <button id="loginBtn">Start Exam</button>
+<div class="login-card">
+    <h2>Bright-CBT</h2>
+    <p>Please enter your Registration Number to begin the examination.</p>
+    
+    <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX">
+    <button id="startBtn">Login & Start Exam</button>
+
+    <div class="footer-links">
+        Don't have a Reg No? <a href="register.html">Register here</a>
     </div>
+</div>
 
-    <!-- Firebase SDKs (CDN Version) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Your specific config
-        const firebaseConfig = {
-            apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
-            authDomain: "bright-cbt.firebaseapp.com",
-            projectId: "bright-cbt",
-            storageBucket: "bright-cbt.firebasestorage.app",
-            messagingSenderId: "834402482237",
-            appId: "1:834402482237:web:63c717f80cd154dd1cd254"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
+        authDomain: "bright-cbt.firebaseapp.com",
+        projectId: "bright-cbt",
+        storageBucket: "bright-cbt.firebasestorage.app",
+        messagingSenderId: "834402482237",
+        appId: "1:834402482237:web:63c717f80cd154dd1cd254"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        document.getElementById('loginBtn').addEventListener('click', async () => {
-            const id = document.getElementById('studentID').value.trim();
-            
-            if (!id) {
-                alert("Please enter an ID");
-                return;
-            }
+    document.getElementById('startBtn').addEventListener('click', async () => {
+        const id = document.getElementById('loginID').value.trim().toUpperCase();
 
-            try {
-                // Look for the student in the "students" collection
-                const docRef = doc(db, "students", id);
-                const docSnap = await getDoc(docRef);
+        if (!id) {
+            alert("Please enter your Registration Number!");
+            return;
+        }
 
-                if (docSnap.exists()) {
-                    const studentData = docSnap.data();
-                    
-                    if (studentData.hasFinished) {
-                        alert("You have already submitted this exam!");
-                    } else {
-                        // Save ID to local storage so the exam page knows who is logged in
-                        localStorage.setItem('currentStudent', id);
-                        window.location.href = "exam.html";
-                    }
+        try {
+            // Check if student exists in Firebase
+            const docRef = doc(db, "students", id);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+
+                if (data.hasFinished) {
+                    alert("Submission Blocked: You have already completed this exam.");
                 } else {
-                    alert("Invalid Admission ID. Please check with your teacher.");
+                    // Save to local memory and go to exam
+                    localStorage.setItem('currentStudent', id);
+                    window.location.href = "exam.html";
                 }
-            } catch (error) {
-                console.error("Connection Error:", error);
-                alert("Connection Error. Check your internet or Firebase Rules.");
+            } else {
+                alert("Invalid Registration Number. Please register first or check your spelling.");
             }
-        });
-    </script>
+        } catch (error) {
+            alert("Connection Error: Check your data connection or Firebase Authorized Domains.");
+            console.error(error);
+        }
+    });
+</script>
+
 </body>
 </html>
