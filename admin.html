@@ -2,33 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bright-CBT Admin</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <title>Bright-CBT | Admin Dashboard</title>
     <style>
-        body { background: #1a1a2e; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: #16213e; padding: 20px; border-radius: 10px; margin-bottom: 20px; max-width: 500px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { padding: 10px; background: #4ecca3; border: none; cursor: pointer; font-weight: bold; width: 100%; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .admin-card { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: bold; color: #666; }
+        .tab-btn.active { color: #007bff; border-bottom: 2px solid #007bff; }
+        .section { display: none; }
+        .section.active { display: block; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button.main-btn { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .status { text-align: center; margin-top: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Admin Panel</h1>
-    <div class="card">
-        <h3>1. Register Student</h3>
-        <input type="text" id="n" placeholder="Name">
-        <input type="text" id="i" placeholder="Admission ID">
-        <button onclick="reg()">Register</button>
-    </div>
-    <div class="card">
-        <h3>2. Upload Exam (Excel)</h3>
-        <input type="text" id="title" placeholder="Exam Name (e.g. MATH_J1)">
-        <input type="file" id="f">
-        <button onclick="up()">Upload Questions</button>
+
+<div class="admin-card">
+    <h2>Bright-CBT Admin</h2>
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('students-sec')">Register Students</button>
+        <button class="tab-btn" onclick="showTab('questions-sec')">Add Questions</button>
     </div>
 
+    <!-- Section 1: Students -->
+    <div id="students-sec" class="section active">
+        <input type="text" id="regID" placeholder="Admission ID (e.g. JSS1/001)">
+        <input type="text" id="regName" placeholder="Full Name">
+        <button class="main-btn" onclick="registerStudent()">Add Student</button>
+    </div>
+
+    <!-- Section 2: Questions -->
+    <div id="questions-sec" class="section">
+        <input type="text" id="qID" placeholder="Question ID (e.g. q1, q2)">
+        <input type="text" id="qText" placeholder="The Question Text">
+        <input type="text" id="opt0" placeholder="Option A">
+        <input type="text" id="opt1" placeholder="Option B">
+        <input type="text" id="opt2" placeholder="Option C">
+        <input type="text" id="opt3" placeholder="Option D">
+        <label>Correct Answer:</label>
+        <select id="correctIndex">
+            <option value="0">Option A</option>
+            <option value="1">Option B</option>
+            <option value="2">Option C</option>
+            <option value="3">Option D</option>
+        </select>
+        <button class="main-btn" style="background:#28a745" onclick="addQuestion()">Save Question</button>
+    </div>
+
+    <div id="status" class="status"></div>
+</div>
+
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
@@ -41,28 +69,50 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const status = document.getElementById('status');
 
-    window.reg = async () => {
-        const id = document.getElementById('i').value;
-        await setDoc(doc(db, "students", id), { studentName: document.getElementById('n').value, loginID: id, hasFinished: false, score: 0, regDate: new Date() });
-        alert("Done!");
+    // Tab Logic
+    window.showTab = (id) => {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        event.currentTarget.classList.add('active');
     }
 
-    window.up = async () => {
-        const file = document.getElementById('f').files[0];
-        const title = document.getElementById('title').value;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            for(let q of json) {
-                await addDoc(collection(db, "questions"), { examID: title, question: q.Question, options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD], answer: q.Answer });
-            }
-            alert("Uploaded!");
-        };
-        reader.readAsArrayBuffer(file);
-    }
+    // Register Student Logic
+    window.registerStudent = async () => {
+        const id = document.getElementById('regID').value;
+        const name = document.getElementById('regName').value;
+        try {
+            await setDoc(doc(db, "students", id), { studentName: name, loginID: id, score: 0, hasFinished: false });
+            status.innerText = "Student Saved!";
+        } catch (e) { status.innerText = "Error: " + e.message; }
+    };
+
+    // Add Question Logic
+    window.addQuestion = async () => {
+        const id = document.getElementById('qID').value;
+        const text = document.getElementById('qText').value;
+        const options = [
+            document.getElementById('opt0').value,
+            document.getElementById('opt1').value,
+            document.getElementById('opt2').value,
+            document.getElementById('opt3').value
+        ];
+        const correct = parseInt(document.getElementById('correctIndex').value);
+
+        try {
+            await setDoc(doc(db, "questions", id), {
+                questionText: text,
+                options: options,
+                correctAnswer: correct
+            });
+            status.innerText = "Question Saved successfully!";
+            // Reset fields
+            document.getElementById('qID').value = "q" + (parseInt(id.replace('q','')) + 1);
+            document.getElementById('qText').value = "";
+        } catch (e) { status.innerText = "Error: " + e.message; }
+    };
 </script>
 </body>
 </html>
