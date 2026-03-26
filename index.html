@@ -3,33 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Login</title>
+    <title>Bright-CBT | Portal</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        h2 { color: #007bff; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; text-transform: uppercase; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .error-box { color: red; font-size: 12px; margin-top: 10px; display: none; border: 1px solid red; padding: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 380px; text-align: center; }
+        h2 { color: #007bff; margin-bottom: 5px; }
+        .toggle-link { color: #28a745; cursor: pointer; font-weight: bold; text-decoration: underline; font-size: 14px; }
+        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:disabled { background: #ccc; }
+        #regDisplay { display: none; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px dashed #856404; margin-top: 15px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .online { background: #28a745; } .offline { background: #dc3545; }
     </style>
 </head>
 <body>
 
-<div class="login-card">
-    <h2>Bright-CBT</h2>
-    <p>Enter Registration Number</p>
-    <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX">
-    <button id="loginBtn">Login</button>
-    <div id="debugError" class="error-box"></div>
-    <p style="margin-top:15px; font-size: 13px;">New? <a href="register.html">Register here</a></p>
+<div class="card">
+    <div id="statusIndicator"><span class="status-dot online"></span><small>System Online</small></div>
+    
+    <!-- Login View -->
+    <div id="loginView">
+        <h2>Student Login</h2>
+        <p style="font-size: 13px; color: #666;">Enter your Registration Number</p>
+        <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX" style="text-transform: uppercase;">
+        <button id="loginBtn">Login & Start</button>
+        <p style="margin-top: 20px; font-size: 14px;">No Reg No? <span class="toggle-link" onclick="toggleView('reg')">Register here</span></p>
+    </div>
+
+    <!-- Registration View -->
+    <div id="regView" style="display: none;">
+        <h2>New Registration</h2>
+        <input type="text" id="studentName" placeholder="Enter Full Name">
+        <button id="regBtn" style="background: #28a745;">Generate Reg No</button>
+        
+        <div id="regDisplay">
+            <p style="margin: 0; font-size: 13px;">Your Reg No is:</p>
+            <h3 id="generatedID" style="color: #d9534f; margin: 5px 0;"></h3>
+            <p style="font-size: 11px; color: #666;">WRITE THIS DOWN! You need it to login.</p>
+            <button onclick="location.reload()" style="background: #6c757d; padding: 8px;">Back to Login</button>
+        </div>
+        <p style="margin-top: 20px; font-size: 14px;"><span class="toggle-link" onclick="toggleView('login')">Back to Login</span></p>
+    </div>
 </div>
 
 <script type="module">
-    // 1. Import Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 2. Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
         authDomain: "bright-cbt.firebaseapp.com",
@@ -39,61 +60,79 @@
         appId: "1:834402482237:web:63c717f80cd154dd1cd254"
     };
 
-    // 3. Initialize
+    // Initialize Firebase with Offline Persistence
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    });
 
-    const loginBtn = document.getElementById('loginBtn');
-    const debugBox = document.getElementById('debugError');
+    // Toggle between Login and Registration
+    window.toggleView = (view) => {
+        document.getElementById('loginView').style.display = view === 'login' ? 'block' : 'none';
+        document.getElementById('regView').style.display = view === 'reg' ? 'block' : 'none';
+    };
 
-    // 4. Login Logic
-    loginBtn.addEventListener('click', async () => {
-        const id = document.getElementById('loginID').value.trim().toUpperCase();
-        
-        if (!id) {
-            alert("Please enter your ID");
-            return;
-        }
+    // --- REGISTRATION LOGIC ---
+    document.getElementById('regBtn').onclick = async () => {
+        const name = document.getElementById('studentName').value.trim();
+        if (!name) return alert("Enter your name");
 
-        loginBtn.innerText = "Connecting...";
-        loginBtn.disabled = true;
-        debugBox.style.display = "none";
+        const regBtn = document.getElementById('regBtn');
+        regBtn.disabled = true;
+        regBtn.innerText = "Processing...";
+
+        const id = `BRIGHT/2026/${Math.floor(1000 + Math.random() * 9000)}`;
 
         try {
-            const docRef = doc(db, "students", id);
-            const docSnap = await getDoc(docRef);
+            await setDoc(doc(db, "students", id), {
+                studentName: name,
+                loginID: id,
+                score: 0,
+                hasFinished: false
+            });
+            document.getElementById('studentName').style.display = "none";
+            regBtn.style.display = "none";
+            document.getElementById('generatedID').innerText = id;
+            document.getElementById('regDisplay').style.display = "block";
+        } catch (e) {
+            alert("Connection slow. Reg No saved locally. Please try logging in with: " + id);
+            console.error(e);
+        }
+    };
 
+    // --- LOGIN LOGIC ---
+    document.getElementById('loginBtn').onclick = async () => {
+        const id = document.getElementById('loginID').value.trim().toUpperCase();
+        if (!id) return alert("Enter Reg No");
+
+        const loginBtn = document.getElementById('loginBtn');
+        loginBtn.innerText = "Verifying...";
+        loginBtn.disabled = true;
+
+        try {
+            const docSnap = await getDoc(doc(db, "students", id));
             if (docSnap.exists()) {
-                const studentData = docSnap.data();
-                if (studentData.hasFinished) {
-                    alert("You have already submitted this exam!");
+                const data = docSnap.data();
+                if (data.hasFinished) {
+                    alert("You have already submitted this exam.");
                 } else {
                     localStorage.setItem('currentStudent', id);
                     window.location.href = "exam.html";
                 }
             } else {
-                alert("ID not found. Did you register?");
+                alert("ID not found. Register first.");
             }
-        } catch (error) {
-            // THIS PART IS KEY: It catches the exact Firebase reason
-            console.error(error);
-            debugBox.style.display = "block";
-            debugBox.innerText = "CRITICAL ERROR: " + error.code;
-            
-            // Explain common errors
-            if(error.code === "permission-denied") {
-                alert("PERMISSION DENIED: Check your Firebase Rules!");
-            } else if(error.code === "unauthorized-domain") {
-                alert("DOMAIN ERROR: Add your website link to Firebase Authorized Domains.");
-            } else {
-                alert("System Error: " + error.code);
-            }
+        } catch (e) {
+            alert("Network Error. Check your data.");
         } finally {
-            loginBtn.innerText = "Login";
+            loginBtn.innerText = "Login & Start";
             loginBtn.disabled = false;
         }
-    });
-</script>
+    };
 
+    // Online/Offline Status Listener
+    window.addEventListener('online', () => document.getElementById('statusIndicator').innerHTML = '<span class="status-dot online"></span><small>System Online</small>');
+    window.addEventListener('offline', () => document.getElementById('statusIndicator').innerHTML = '<span class="status-dot offline"></span><small>System Offline (Saving to Phone)</small>');
+</script>
 </body>
 </html>
