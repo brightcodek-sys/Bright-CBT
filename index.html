@@ -3,37 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Student Login</title>
+    <title>Bright-CBT | Login</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
-        h2 { color: #007bff; margin-bottom: 10px; }
-        p { color: #666; font-size: 14px; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-transform: uppercase; } /* Auto uppercase for Reg No */
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        .footer-links { margin-top: 20px; font-size: 13px; }
-        .footer-links a { color: #28a745; text-decoration: none; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        h2 { color: #007bff; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; text-transform: uppercase; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .error-box { color: red; font-size: 12px; margin-top: 10px; display: none; border: 1px solid red; padding: 5px; }
     </style>
 </head>
 <body>
 
 <div class="login-card">
     <h2>Bright-CBT</h2>
-    <p>Please enter your Registration Number to begin the examination.</p>
-    
+    <p>Enter Registration Number</p>
     <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX">
-    <button id="startBtn">Login & Start Exam</button>
-
-    <div class="footer-links">
-        Don't have a Reg No? <a href="register.html">Register here</a>
-    </div>
+    <button id="loginBtn">Login</button>
+    <div id="debugError" class="error-box"></div>
+    <p style="margin-top:15px; font-size: 13px;">New? <a href="register.html">Register here</a></p>
 </div>
 
 <script type="module">
+    // 1. Import Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // 2. Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
         authDomain: "bright-cbt.firebaseapp.com",
@@ -43,38 +39,58 @@
         appId: "1:834402482237:web:63c717f80cd154dd1cd254"
     };
 
+    // 3. Initialize
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    document.getElementById('startBtn').addEventListener('click', async () => {
-        const id = document.getElementById('loginID').value.trim().toUpperCase();
+    const loginBtn = document.getElementById('loginBtn');
+    const debugBox = document.getElementById('debugError');
 
+    // 4. Login Logic
+    loginBtn.addEventListener('click', async () => {
+        const id = document.getElementById('loginID').value.trim().toUpperCase();
+        
         if (!id) {
-            alert("Please enter your Registration Number!");
+            alert("Please enter your ID");
             return;
         }
 
+        loginBtn.innerText = "Connecting...";
+        loginBtn.disabled = true;
+        debugBox.style.display = "none";
+
         try {
-            // Check if student exists in Firebase
             const docRef = doc(db, "students", id);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
-                const data = docSnap.data();
-
-                if (data.hasFinished) {
-                    alert("Submission Blocked: You have already completed this exam.");
+                const studentData = docSnap.data();
+                if (studentData.hasFinished) {
+                    alert("You have already submitted this exam!");
                 } else {
-                    // Save to local memory and go to exam
                     localStorage.setItem('currentStudent', id);
                     window.location.href = "exam.html";
                 }
             } else {
-                alert("Invalid Registration Number. Please register first or check your spelling.");
+                alert("ID not found. Did you register?");
             }
         } catch (error) {
-            alert("Connection Error: Check your data connection or Firebase Authorized Domains.");
+            // THIS PART IS KEY: It catches the exact Firebase reason
             console.error(error);
+            debugBox.style.display = "block";
+            debugBox.innerText = "CRITICAL ERROR: " + error.code;
+            
+            // Explain common errors
+            if(error.code === "permission-denied") {
+                alert("PERMISSION DENIED: Check your Firebase Rules!");
+            } else if(error.code === "unauthorized-domain") {
+                alert("DOMAIN ERROR: Add your website link to Firebase Authorized Domains.");
+            } else {
+                alert("System Error: " + error.code);
+            }
+        } finally {
+            loginBtn.innerText = "Login";
+            loginBtn.disabled = false;
         }
     });
 </script>
