@@ -2,67 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bright-CBT Admin</title>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bright-CBT Login</title>
     <style>
-        body { background: #1a1a2e; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: #16213e; padding: 20px; border-radius: 10px; margin-bottom: 20px; max-width: 500px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { padding: 10px; background: #4ecca3; border: none; cursor: pointer; font-weight: bold; width: 100%; }
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; }
+        .login-card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
     </style>
 </head>
 <body>
-    <h1>Admin Panel</h1>
-    <div class="card">
-        <h3>1. Register Student</h3>
-        <input type="text" id="n" placeholder="Name">
-        <input type="text" id="i" placeholder="Admission ID">
-        <button onclick="reg()">Register</button>
-    </div>
-    <div class="card">
-        <h3>2. Upload Exam (Excel)</h3>
-        <input type="text" id="title" placeholder="Exam Name (e.g. MATH_J1)">
-        <input type="file" id="f">
-        <button onclick="up()">Upload Questions</button>
+
+    <div class="login-card">
+        <h2>Bright-CBT</h2>
+        <p>Enter Admission ID to Start</p>
+        <input type="text" id="studentID" placeholder="e.g. JSS1/001">
+        <button id="loginBtn">Start Exam</button>
     </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+    <!-- Firebase SDKs (CDN Version) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
-        authDomain: "bright-cbt.firebaseapp.com",
-        projectId: "bright-cbt",
-        storageBucket: "bright-cbt.firebasestorage.app",
-        messagingSenderId: "834402482237",
-        appId: "1:834402482237:web:63c717f80cd154dd1cd254"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    window.reg = async () => {
-        const id = document.getElementById('i').value;
-        await setDoc(doc(db, "students", id), { studentName: document.getElementById('n').value, loginID: id, hasFinished: false, score: 0, regDate: new Date() });
-        alert("Done!");
-    }
-
-    window.up = async () => {
-        const file = document.getElementById('f').files[0];
-        const title = document.getElementById('title').value;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            for(let q of json) {
-                await addDoc(collection(db, "questions"), { examID: title, question: q.Question, options: [q.OptionA, q.OptionB, q.OptionC, q.OptionD], answer: q.Answer });
-            }
-            alert("Uploaded!");
+        // Your specific config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
+            authDomain: "bright-cbt.firebaseapp.com",
+            projectId: "bright-cbt",
+            storageBucket: "bright-cbt.firebasestorage.app",
+            messagingSenderId: "834402482237",
+            appId: "1:834402482237:web:63c717f80cd154dd1cd254"
         };
-        reader.readAsArrayBuffer(file);
-    }
-</script>
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.getElementById('loginBtn').addEventListener('click', async () => {
+            const id = document.getElementById('studentID').value.trim();
+            
+            if (!id) {
+                alert("Please enter an ID");
+                return;
+            }
+
+            try {
+                // Look for the student in the "students" collection
+                const docRef = doc(db, "students", id);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const studentData = docSnap.data();
+                    
+                    if (studentData.hasFinished) {
+                        alert("You have already submitted this exam!");
+                    } else {
+                        // Save ID to local storage so the exam page knows who is logged in
+                        localStorage.setItem('currentStudent', id);
+                        window.location.href = "exam.html";
+                    }
+                } else {
+                    alert("Invalid Admission ID. Please check with your teacher.");
+                }
+            } catch (error) {
+                console.error("Connection Error:", error);
+                alert("Connection Error. Check your internet or Firebase Rules.");
+            }
+        });
+    </script>
 </body>
 </html>
