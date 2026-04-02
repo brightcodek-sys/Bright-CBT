@@ -3,54 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Portal</title>
+    <title>Bright-CBT | Student Portal</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 380px; text-align: center; }
-        h2 { color: #007bff; margin-bottom: 5px; }
-        .toggle-link { color: #28a745; cursor: pointer; font-weight: bold; text-decoration: underline; font-size: 14px; }
-        input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        button:disabled { background: #ccc; }
-        #regDisplay { display: none; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px dashed #856404; margin-top: 15px; }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        h2 { color: var(--primary); margin-bottom: 5px; }
+        .status-bar { font-size: 12px; margin-bottom: 20px; padding: 5px; border-radius: 20px; background: #eee; display: inline-block; padding: 5px 15px; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .online { background: #28a745; } .offline { background: #dc3545; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; }
+        .btn-login { background: var(--primary); color: white; }
+        .btn-reg { background: var(--success); color: white; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #regResult { display: none; background: #fff3cd; padding: 15px; border: 1px dashed #856404; border-radius: 8px; margin-top: 15px; }
+        .toggle-text { margin-top: 20px; font-size: 14px; color: #555; }
+        .toggle-text span { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div id="statusIndicator"><span class="status-dot online"></span><small>System Online</small></div>
-    
-    <!-- Login View -->
-    <div id="loginView">
-        <h2>Student Login</h2>
-        <p style="font-size: 13px; color: #666;">Enter your Registration Number</p>
-        <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX" style="text-transform: uppercase;">
-        <button id="loginBtn">Login & Start</button>
-        <p style="margin-top: 20px; font-size: 14px;">No Reg No? <span class="toggle-link" onclick="toggleView('reg')">Register here</span></p>
+<div class="container">
+    <div class="status-bar">
+        <span id="statusDot" class="dot online"></span>
+        <span id="statusText">System Connected</span>
     </div>
 
-    <!-- Registration View -->
-    <div id="regView" style="display: none;">
-        <h2>New Registration</h2>
-        <input type="text" id="studentName" placeholder="Enter Full Name">
-        <button id="regBtn" style="background: #28a745;">Generate Reg No</button>
+    <div id="loginBox">
+        <h2>Bright-CBT Login</h2>
+        <p style="font-size: 13px; color: #666;">Enter Registration Number to Start</p>
+        <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX" style="text-transform: uppercase;">
+        <button id="loginBtn" class="btn-login">Login & Start Exam</button>
+        <p class="toggle-text">New Student? <span onclick="showView('reg')">Register Here</span></p>
+    </div>
+
+    <div id="regBox" style="display:none;">
+        <h2>Student Registration</h2>
+        <input type="text" id="studentName" placeholder="Full Name (e.g. John Ade)">
+        <button id="regBtn" class="btn-reg">Generate Reg No</button>
         
-        <div id="regDisplay">
-            <p style="margin: 0; font-size: 13px;">Your Reg No is:</p>
-            <h3 id="generatedID" style="color: #d9534f; margin: 5px 0;"></h3>
-            <p style="font-size: 11px; color: #666;">WRITE THIS DOWN! You need it to login.</p>
-            <button onclick="location.reload()" style="background: #6c757d; padding: 8px;">Back to Login</button>
+        <div id="regResult">
+            <p style="margin:0; font-size:13px;">Save your Reg No:</p>
+            <h3 id="displayID" style="color: #d9534f; margin: 10px 0;"></h3>
+            <button onclick="location.reload()" style="background:#6c757d; font-size:12px; padding:5px;">Return to Login</button>
         </div>
-        <p style="margin-top: 20px; font-size: 14px;"><span class="toggle-link" onclick="toggleView('login')">Back to Login</span></p>
+        <p class="toggle-text">Already Registered? <span onclick="showView('login')">Go to Login</span></p>
     </div>
 </div>
 
 <script type="module">
+    // 1. Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // 2. Your Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
         authDomain: "bright-cbt.firebaseapp.com",
@@ -60,79 +68,111 @@
         appId: "1:834402482237:web:63c717f80cd154dd1cd254"
     };
 
-    // Initialize Firebase with Offline Persistence
+    // 3. Initialize App & Database with Offline Persistence
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = initializeFirestore(app, {
         localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
 
-    // Toggle between Login and Registration
-    window.toggleView = (view) => {
-        document.getElementById('loginView').style.display = view === 'login' ? 'block' : 'none';
-        document.getElementById('regView').style.display = view === 'reg' ? 'block' : 'none';
+    // --- UI VIEW TOGGLE ---
+    window.showView = (view) => {
+        document.getElementById('loginBox').style.display = view === 'login' ? 'block' : 'none';
+        document.getElementById('regBox').style.display = view === 'reg' ? 'block' : 'none';
     };
 
     // --- REGISTRATION LOGIC ---
     document.getElementById('regBtn').onclick = async () => {
         const name = document.getElementById('studentName').value.trim();
-        if (!name) return alert("Enter your name");
+        if(!name) return alert("Please enter your name");
 
         const regBtn = document.getElementById('regBtn');
         regBtn.disabled = true;
-        regBtn.innerText = "Processing...";
+        regBtn.innerText = "Creating Account...";
 
-        const id = `BRIGHT/2026/${Math.floor(1000 + Math.random() * 9000)}`;
+        // Generate ID and Masked Email
+        const randomID = Math.floor(1000 + Math.random() * 9000);
+        const regNo = `BRIGHT/2026/${randomID}`;
+        const fakeEmail = `student.${randomID}@brightcbt.com`; 
+        const password = "password123"; // Universal password for simplicity
 
         try {
-            await setDoc(doc(db, "students", id), {
+            // A. Create Firebase Auth Account
+            await createUserWithEmailAndPassword(auth, fakeEmail, password);
+            
+            // B. Save Student Profile to Firestore
+            await setDoc(doc(db, "students", regNo), {
                 studentName: name,
-                loginID: id,
+                loginID: regNo,
+                email: fakeEmail,
                 score: 0,
                 hasFinished: false
             });
+
             document.getElementById('studentName').style.display = "none";
             regBtn.style.display = "none";
-            document.getElementById('generatedID').innerText = id;
-            document.getElementById('regDisplay').style.display = "block";
-        } catch (e) {
-            alert("Connection slow. Reg No saved locally. Please try logging in with: " + id);
-            console.error(e);
+            document.getElementById('displayID').innerText = regNo;
+            document.getElementById('regResult').style.display = "block";
+
+        } catch (error) {
+            alert("Error: " + error.message);
+            regBtn.disabled = false;
+            regBtn.innerText = "Generate Reg No";
         }
     };
 
     // --- LOGIN LOGIC ---
     document.getElementById('loginBtn').onclick = async () => {
         const id = document.getElementById('loginID').value.trim().toUpperCase();
-        if (!id) return alert("Enter Reg No");
+        if(!id) return alert("Enter your Registration Number");
 
         const loginBtn = document.getElementById('loginBtn');
-        loginBtn.innerText = "Verifying...";
         loginBtn.disabled = true;
+        loginBtn.innerText = "Verifying...";
 
         try {
-            const docSnap = await getDoc(doc(db, "students", id));
+            // A. Fetch Student Data first to get the masked email
+            const docRef = doc(db, "students", id);
+            const docSnap = await getDoc(docRef);
+
             if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.hasFinished) {
+                const userData = docSnap.data();
+                
+                if (userData.hasFinished) {
                     alert("You have already submitted this exam.");
-                } else {
-                    localStorage.setItem('currentStudent', id);
-                    window.location.href = "exam.html";
+                    loginBtn.disabled = false;
+                    loginBtn.innerText = "Login & Start Exam";
+                    return;
                 }
+
+                // B. Sign in to Firebase Auth
+                await signInWithEmailAndPassword(auth, userData.email, "password123");
+                
+                // C. Move to Exam
+                localStorage.setItem('currentStudent', id);
+                window.location.href = "exam.html";
             } else {
-                alert("ID not found. Register first.");
+                alert("Registration Number not found!");
+                loginBtn.disabled = false;
+                loginBtn.innerText = "Login & Start Exam";
             }
-        } catch (e) {
-            alert("Network Error. Check your data.");
-        } finally {
-            loginBtn.innerText = "Login & Start";
+        } catch (error) {
+            alert("Login Failed. Check internet or ID.");
             loginBtn.disabled = false;
+            loginBtn.innerText = "Login & Start Exam";
         }
     };
 
-    // Online/Offline Status Listener
-    window.addEventListener('online', () => document.getElementById('statusIndicator').innerHTML = '<span class="status-dot online"></span><small>System Online</small>');
-    window.addEventListener('offline', () => document.getElementById('statusIndicator').innerHTML = '<span class="status-dot offline"></span><small>System Offline (Saving to Phone)</small>');
+    // --- NETWORK MONITOR ---
+    window.addEventListener('online', () => {
+        document.getElementById('statusDot').className = "dot online";
+        document.getElementById('statusText').innerText = "System Connected";
+    });
+    window.addEventListener('offline', () => {
+        document.getElementById('statusDot').className = "dot offline";
+        document.getElementById('statusText').innerText = "Working Offline (Auto-Syncing)";
+    });
 </script>
+
 </body>
 </html>
