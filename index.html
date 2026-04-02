@@ -3,62 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Student Portal</title>
+    <title>Bright-CBT | Portal</title>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
+        :root { --primary: #007bff; --success: #28a745; --admin: #6f42c1; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
-        h2 { color: var(--primary); margin-bottom: 5px; }
-        .status-bar { font-size: 12px; margin-bottom: 20px; padding: 5px; border-radius: 20px; background: #eee; display: inline-block; padding: 5px 15px; }
-        .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background: #28a745; } .offline { background: #dc3545; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; }
-        .btn-login { background: var(--primary); color: white; }
-        .btn-reg { background: var(--success); color: white; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        #regResult { display: none; background: #fff3cd; padding: 15px; border: 1px dashed #856404; border-radius: 8px; margin-top: 15px; }
-        .toggle-text { margin-top: 20px; font-size: 14px; color: #555; }
-        .toggle-text span { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
+        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 450px; text-align: center; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; color: white; }
+        .btn-login { background: var(--primary); }
+        .btn-reg { background: var(--success); }
+        .btn-admin { background: var(--admin); }
+        .hidden { display: none; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #eee; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="status-bar">
-        <span id="statusDot" class="dot online"></span>
-        <span id="statusText">System Connected</span>
+    <div id="loginView">
+        <h2>Bright-CBT</h2>
+        <input type="text" id="loginID" placeholder="REG NO OR ADMIN KEY" style="text-transform: uppercase;">
+        <button id="loginBtn" class="btn-login">Login / Access Admin</button>
+        <p style="font-size: 14px;">New? <a href="#" onclick="showView('regView')">Register here</a></p>
     </div>
 
-    <div id="loginBox">
-        <h2>Bright-CBT Login</h2>
-        <p style="font-size: 13px; color: #666;">Enter Registration Number to Start</p>
-        <input type="text" id="loginID" placeholder="BRIGHT/2026/XXXX" style="text-transform: uppercase;">
-        <button id="loginBtn" class="btn-login">Login & Start Exam</button>
-        <p class="toggle-text">New Student? <span onclick="showView('reg')">Register Here</span></p>
-    </div>
-
-    <div id="regBox" style="display:none;">
-        <h2>Student Registration</h2>
-        <input type="text" id="studentName" placeholder="Full Name (e.g. John Ade)">
+    <div id="regView" class="hidden">
+        <h2>Register</h2>
+        <input type="text" id="studentName" placeholder="Full Name">
         <button id="regBtn" class="btn-reg">Generate Reg No</button>
-        
-        <div id="regResult">
-            <p style="margin:0; font-size:13px;">Save your Reg No:</p>
-            <h3 id="displayID" style="color: #d9534f; margin: 10px 0;"></h3>
-            <button onclick="location.reload()" style="background:#6c757d; font-size:12px; padding:5px;">Return to Login</button>
+        <div id="regResult" class="hidden" style="background:#fff3cd; padding:15px; margin-top:10px; border-radius:8px;">
+            <p>Your ID: <strong id="displayID" style="color:red;"></strong></p>
+            <button onclick="location.reload()" style="background:#6c757d;">Back to Login</button>
         </div>
-        <p class="toggle-text">Already Registered? <span onclick="showView('login')">Go to Login</span></p>
+        <p><a href="#" onclick="showView('loginView')">Back</a></p>
+    </div>
+
+    <div id="adminView" class="hidden">
+        <h2 style="color:var(--admin)">Admin Dashboard</h2>
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <button onclick="showAdminTab('addQuest')" style="background:#333; font-size:12px;">Add Question</button>
+            <button onclick="loadResults()" style="background:#333; font-size:12px;">View Results</button>
+        </div>
+
+        <div id="addQuest">
+            <textarea id="qText" placeholder="Question Text"></textarea>
+            <input type="text" id="optA" placeholder="Option A">
+            <input type="text" id="optB" placeholder="Option B">
+            <input type="text" id="optC" placeholder="Option C">
+            <input type="text" id="optD" placeholder="Option D">
+            <select id="correctOpt">
+                <option value="">Select Correct Answer</option>
+                <option value="A">A</option><option value="B">B</option>
+                <option value="C">C</option><option value="D">D</option>
+            </select>
+            <button id="saveQBtn" class="btn-admin">Save Question</button>
+        </div>
+
+        <div id="viewResults" class="hidden">
+            <table>
+                <thead><tr><th>Name</th><th>ID</th><th>Score</th></tr></thead>
+                <tbody id="resultsTable"></tbody>
+            </table>
+        </div>
+        <button onclick="location.reload()" style="background:red; margin-top:20px;">Logout Admin</button>
     </div>
 </div>
 
 <script type="module">
-    // 1. Firebase Imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { initializeFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 2. Your Firebase Config
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
         authDomain: "bright-cbt.firebaseapp.com",
@@ -68,111 +85,88 @@
         appId: "1:834402482237:web:63c717f80cd154dd1cd254"
     };
 
-    // 3. Initialize App & Database with Offline Persistence
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
+    const db = initializeFirestore(app, { experimentalForceLongPolling: true });
 
-    // --- UI VIEW TOGGLE ---
-    window.showView = (view) => {
-        document.getElementById('loginBox').style.display = view === 'login' ? 'block' : 'none';
-        document.getElementById('regBox').style.display = view === 'reg' ? 'block' : 'none';
+    const ADMIN_KEY = "ADMIN123"; // CHANGE THIS TO YOUR SECRET KEY
+
+    window.showView = (id) => {
+        document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
     };
 
-    // --- REGISTRATION LOGIC ---
-    document.getElementById('regBtn').onclick = async () => {
-        const name = document.getElementById('studentName').value.trim();
-        if(!name) return alert("Please enter your name");
-
-        const regBtn = document.getElementById('regBtn');
-        regBtn.disabled = true;
-        regBtn.innerText = "Creating Account...";
-
-        // Generate ID and Masked Email
-        const randomID = Math.floor(1000 + Math.random() * 9000);
-        const regNo = `BRIGHT/2026/${randomID}`;
-        const fakeEmail = `student.${randomID}@brightcbt.com`; 
-        const password = "password123"; // Universal password for simplicity
-
-        try {
-            // A. Create Firebase Auth Account
-            await createUserWithEmailAndPassword(auth, fakeEmail, password);
-            
-            // B. Save Student Profile to Firestore
-            await setDoc(doc(db, "students", regNo), {
-                studentName: name,
-                loginID: regNo,
-                email: fakeEmail,
-                score: 0,
-                hasFinished: false
-            });
-
-            document.getElementById('studentName').style.display = "none";
-            regBtn.style.display = "none";
-            document.getElementById('displayID').innerText = regNo;
-            document.getElementById('regResult').style.display = "block";
-
-        } catch (error) {
-            alert("Error: " + error.message);
-            regBtn.disabled = false;
-            regBtn.innerText = "Generate Reg No";
-        }
+    window.showAdminTab = (tab) => {
+        document.getElementById('addQuest').classList.add('hidden');
+        document.getElementById('viewResults').classList.add('hidden');
+        document.getElementById(tab).classList.remove('hidden');
     };
 
     // --- LOGIN LOGIC ---
     document.getElementById('loginBtn').onclick = async () => {
-        const id = document.getElementById('loginID').value.trim().toUpperCase();
-        if(!id) return alert("Enter your Registration Number");
+        const val = document.getElementById('loginID').value.trim().toUpperCase();
+        if(!val) return alert("Enter ID");
 
-        const loginBtn = document.getElementById('loginBtn');
-        loginBtn.disabled = true;
-        loginBtn.innerText = "Verifying...";
+        if(val === ADMIN_KEY) {
+            showView('adminView');
+            return;
+        }
 
         try {
-            // A. Fetch Student Data first to get the masked email
-            const docRef = doc(db, "students", id);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const userData = docSnap.data();
-                
-                if (userData.hasFinished) {
-                    alert("You have already submitted this exam.");
-                    loginBtn.disabled = false;
-                    loginBtn.innerText = "Login & Start Exam";
-                    return;
-                }
-
-                // B. Sign in to Firebase Auth
-                await signInWithEmailAndPassword(auth, userData.email, "password123");
-                
-                // C. Move to Exam
-                localStorage.setItem('currentStudent', id);
+            const docSnap = await getDoc(doc(db, "students", val));
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                await signInWithEmailAndPassword(auth, data.email, "password123");
+                localStorage.setItem('currentStudent', val);
                 window.location.href = "exam.html";
-            } else {
-                alert("Registration Number not found!");
-                loginBtn.disabled = false;
-                loginBtn.innerText = "Login & Start Exam";
-            }
-        } catch (error) {
-            alert("Login Failed. Check internet or ID.");
-            loginBtn.disabled = false;
-            loginBtn.innerText = "Login & Start Exam";
-        }
+            } else { alert("ID Not Found"); }
+        } catch(e) { alert("Error connecting to server."); }
     };
 
-    // --- NETWORK MONITOR ---
-    window.addEventListener('online', () => {
-        document.getElementById('statusDot').className = "dot online";
-        document.getElementById('statusText').innerText = "System Connected";
-    });
-    window.addEventListener('offline', () => {
-        document.getElementById('statusDot').className = "dot offline";
-        document.getElementById('statusText').innerText = "Working Offline (Auto-Syncing)";
-    });
-</script>
+    // --- REGISTER LOGIC ---
+    document.getElementById('regBtn').onclick = async () => {
+        const name = document.getElementById('studentName').value.trim();
+        if(!name) return alert("Enter Name");
+        const id = "BRIGHT/2026/" + Math.floor(1000 + Math.random()*9000);
+        const email = id.replace(/\//g, ".") + "@cbt.com";
 
+        try {
+            await createUserWithEmailAndPassword(auth, email, "password123");
+            await setDoc(doc(db, "students", id), { studentName: name, email: email, score: 0, hasFinished: false });
+            document.getElementById('displayID').innerText = id;
+            document.getElementById('regResult').classList.remove('hidden');
+        } catch(e) { alert("Registration failed."); }
+    };
+
+    // --- ADMIN: SAVE QUESTION ---
+    document.getElementById('saveQBtn').onclick = async () => {
+        const qData = {
+            question: document.getElementById('qText').value,
+            A: document.getElementById('optA').value,
+            B: document.getElementById('optB').value,
+            C: document.getElementById('optC').value,
+            D: document.getElementById('optD').value,
+            answer: document.getElementById('correctOpt').value
+        };
+        try {
+            const qID = "Q" + Date.now();
+            await setDoc(doc(db, "questions", qID), qData);
+            alert("Question Saved!");
+            document.querySelectorAll('#addQuest input, #addQuest textarea').forEach(i => i.value = "");
+        } catch(e) { alert("Failed to save."); }
+    };
+
+    // --- ADMIN: VIEW RESULTS ---
+    window.loadResults = async () => {
+        showAdminTab('viewResults');
+        const querySnap = await getDocs(collection(db, "students"));
+        const table = document.getElementById('resultsTable');
+        table.innerHTML = "";
+        querySnap.forEach(doc => {
+            const d = doc.data();
+            table.innerHTML += `<tr><td>${d.studentName}</td><td>${doc.id}</td><td>${d.score}</td></tr>`;
+        });
+    };
+</script>
 </body>
 </html>
