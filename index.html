@@ -3,77 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Portal</title>
+    <title>Bright-CBT | Student Portal</title>
     <style>
-        :root { --primary: #007bff; --success: #28a745; --admin: #6f42c1; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
-        .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; color: white; transition: 0.3s; }
+        :root { --primary: #007bff; --success: #28a745; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; margin-top: 10px; color: white; }
         .btn-login { background: var(--primary); }
         .btn-reg { background: var(--success); }
-        .btn-admin { background: var(--admin); }
         .hidden { display: none; }
-        #debugLog { background: #1a1a1a; color: #00ff00; font-family: 'Courier New', monospace; font-size: 11px; padding: 12px; margin-top: 20px; border-radius: 8px; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #444; }
-        .status-pill { font-size: 11px; padding: 5px 12px; border-radius: 20px; background: #eee; margin-bottom: 15px; display: inline-block; }
+        #debug { font-size: 10px; color: red; margin-top: 15px; font-family: monospace; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="status-pill">
-        <span id="dot" style="height:8px; width:8px; border-radius:50%; display:inline-block; background:#bbb;"></span>
-        <span id="status">Checking Network...</span>
+    <div id="loginBox">
+        <h2>Bright-CBT Login</h2>
+        <input type="text" id="loginID" placeholder="REG NO (e.g. BRIGHT/2026/1234)" style="text-transform: uppercase;">
+        <button id="loginBtn" class="btn-login">Start Exam</button>
+        <p style="font-size: 14px;">No ID? <a href="#" onclick="toggleView()">Register Here</a></p>
     </div>
 
-    <div id="loginView">
-        <h2>Bright-CBT</h2>
-        <input type="text" id="loginID" placeholder="REG NO / ADMIN KEY" style="text-transform: uppercase;">
-        <button id="loginBtn" class="btn-login">Login / Admin</button>
-        <p style="font-size: 14px;">New? <a href="#" onclick="showView('regView')">Register here</a></p>
+    <div id="regBox" class="hidden">
+        <h2>Register</h2>
+        <input type="text" id="studentName" placeholder="Full Name">
+        <button id="regBtn" class="btn-reg">Get Reg No</button>
+        <p style="font-size: 14px;"><a href="#" onclick="toggleView()">Back to Login</a></p>
     </div>
 
-    <div id="regView" class="hidden">
-        <h2>Student Registration</h2>
-        <input type="text" id="studentName" placeholder="Enter Full Name">
-        <button id="regBtn" class="btn-reg">Generate ID</button>
-        <div id="regResult" class="hidden" style="background:#fff3cd; padding:15px; margin-top:10px; border-radius:8px; border: 1px dashed #856404;">
-            <p>Your ID: <strong id="displayID" style="color:red;"></strong></p>
-            <button onclick="location.reload()" style="background:#6c757d; font-size:12px;">Back to Login</button>
-        </div>
-        <p><a href="#" onclick="showView('loginView')">Cancel</a></p>
-    </div>
-
-    <div id="adminView" class="hidden">
-        <h2 style="color:var(--admin)">Admin Dashboard</h2>
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <button onclick="showAdminTab('addQuest')" style="background:#333; font-size:11px;">Add Question</button>
-            <button onclick="loadResults()" style="background:#333; font-size:11px;">View Results</button>
-        </div>
-        <div id="addQuest">
-            <textarea id="qText" placeholder="Question Text"></textarea>
-            <input type="text" id="optA" placeholder="A"><input type="text" id="optB" placeholder="B">
-            <input type="text" id="optC" placeholder="C"><input type="text" id="optD" placeholder="D">
-            <select id="correctOpt"><option value="">Correct Answer</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
-            <button id="saveQBtn" class="btn-admin">Save to Cloud</button>
-        </div>
-        <div id="viewResults" class="hidden">
-            <table style="width:100%; font-size:12px; border-collapse:collapse; margin-top:10px;">
-                <thead><tr style="background:#eee;"><th>Name</th><th>Score</th></tr></thead>
-                <tbody id="resultsTable"></tbody>
-            </table>
-        </div>
-        <button onclick="location.reload()" style="background:#dc3545; margin-top:20px; font-size:12px;">Logout</button>
-    </div>
-
-    <div id="debugLog">System Initializing...</div>
-    <button id="forceSync" style="background:#666; font-size:10px; padding:5px; margin-top:5px;">Manual Sync (Fix Error)</button>
+    <div id="debug"></div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, getDocs, terminate, clearIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
@@ -87,108 +53,48 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     
-    // NETWORK OVERRIDE: Forces hotspot to work by avoiding WebSockets
-    let db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+    // THIS IS THE FIX FOR HOTSPOTS: It forces a different connection style
+    const db = initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true 
     });
 
-    const ADMIN_KEY = "ADMIN123";
-
-    function log(msg, color="#0f0") {
-        const d = document.getElementById('debugLog');
-        d.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
-        d.scrollTop = d.scrollHeight;
-    }
-
-    window.showView = (id) => {
-        document.querySelectorAll('.container > div:not(.status-pill):not(#debugLog)').forEach(div => div.classList.add('hidden'));
-        document.getElementById(id).classList.remove('hidden');
-    };
-
-    window.showAdminTab = (tab) => {
-        document.getElementById('addQuest').classList.add('hidden');
-        document.getElementById('viewResults').classList.add('hidden');
-        document.getElementById(tab).classList.remove('hidden');
-    };
-
-    // MANUAL SYNC BUTTON (For clearing connection errors)
-    document.getElementById('forceSync').onclick = async () => {
-        log("Resetting Network Layer...", "#ff0");
-        try {
-            await terminate(db);
-            await clearIndexedDbPersistence(db);
-            location.reload();
-        } catch(e) { log("Sync Failed: " + e.code, "red"); }
-    };
-
-    // --- LOGIN ---
-    document.getElementById('loginBtn').onclick = async () => {
-        const val = document.getElementById('loginID').value.trim().toUpperCase();
-        if(val === ADMIN_KEY) return showView('adminView');
-        if(!val) return alert("Enter ID");
-
-        try {
-            log("Fetching Student Record...");
-            const docSnap = await getDoc(doc(db, "students", val));
-            if(docSnap.exists()) {
-                const d = docSnap.data();
-                await signInWithEmailAndPassword(auth, d.email, "password123");
-                localStorage.setItem('currentStudent', val);
-                window.location.href = "exam.html";
-            } else { log("ID Not Found", "red"); alert("ID Not Found"); }
-        } catch(e) {
-            log("CONNECTION ERROR: " + e.code, "red");
-            if(e.code === 'auth/network-request-failed') log("Hint: Check mum's hotspot data plan!", "#ff0");
-        }
+    window.toggleView = () => {
+        document.getElementById('loginBox').classList.toggle('hidden');
+        document.getElementById('regBox').classList.toggle('hidden');
     };
 
     // --- REGISTRATION ---
     document.getElementById('regBtn').onclick = async () => {
         const name = document.getElementById('studentName').value.trim();
-        if(!name) return alert("Enter Name");
-        const id = "BRIGHT/2026/" + Math.floor(1000 + Math.random()*9000);
+        const id = "BRIGHT/2026/" + Math.floor(1000 + Math.random() * 9000);
         const email = id.replace(/\//g, ".") + "@cbt.com";
 
         try {
-            log("Registering User...");
             await createUserWithEmailAndPassword(auth, email, "password123");
-            await setDoc(doc(db, "students", id), { studentName: name, email: email, score: 0, hasFinished: false });
-            document.getElementById('displayID').innerText = id;
-            document.getElementById('regResult').classList.remove('hidden');
-            log("Success!", "lime");
-        } catch(e) { log("REG ERROR: " + e.code, "red"); }
+            await setDoc(doc(db, "students", id), { name, email, score: 0 });
+            alert("Your ID is: " + id);
+            location.reload();
+        } catch (e) {
+            document.getElementById('debug').innerText = "Reg Error: " + e.code;
+        }
     };
 
-    // --- ADMIN SAVE ---
-    document.getElementById('saveQBtn').onclick = async () => {
+    // --- LOGIN ---
+    document.getElementById('loginBtn').onclick = async () => {
+        const id = document.getElementById('loginID').value.trim().toUpperCase();
         try {
-            const qID = "Q" + Date.now();
-            await setDoc(doc(db, "questions", qID), {
-                question: document.getElementById('qText').value,
-                A: document.getElementById('optA').value, B: document.getElementById('optB').value,
-                C: document.getElementById('optC').value, D: document.getElementById('optD').value,
-                answer: document.getElementById('correctOpt').value
-            });
-            log("Question Saved to Cloud"); alert("Saved!");
-        } catch(e) { log("SAVE ERROR: " + e.code, "red"); }
+            const docSnap = await getDoc(doc(db, "students", id));
+            if (docSnap.exists()) {
+                await signInWithEmailAndPassword(auth, docSnap.data().email, "password123");
+                localStorage.setItem('studentID', id);
+                window.location.href = "exam.html";
+            } else {
+                alert("ID not found!");
+            }
+        } catch (e) {
+            document.getElementById('debug').innerText = "Login Error: " + e.code;
+        }
     };
-
-    // --- VIEW RESULTS ---
-    window.loadResults = async () => {
-        showAdminTab('viewResults');
-        const snap = await getDocs(collection(db, "students"));
-        const table = document.getElementById('resultsTable');
-        table.innerHTML = "";
-        snap.forEach(doc => {
-            const d = doc.data();
-            table.innerHTML += `<tr style="border-bottom:1px solid #eee;"><td>${d.studentName}</td><td>${d.score}</td></tr>`;
-        });
-    };
-
-    log("Ready to Connect.");
-    document.getElementById('status').innerText = "Online (Tough Mode)";
-    document.getElementById('dot').style.background = "#28a745";
 </script>
 </body>
 </html>
