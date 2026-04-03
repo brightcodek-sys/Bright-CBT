@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright-CBT | Portal</title>
+    <title>Bright-CBT | Master Admin</title>
     <style>
-        :root { --primary: #007bff; --admin: #6f42c1; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; margin-top: 10px; }
-        .btn-blue { background: var(--primary); }
-        .btn-purple { background: var(--admin); }
+        :root { --p: #007bff; --s: #28a745; --a: #6f42c1; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 10px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 450px; margin: 20px auto; text-align: center; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; margin-top: 8px; }
+        .btn-blue { background: var(--p); }
+        .btn-purple { background: var(--a); }
+        .btn-green { background: var(--s); }
         .hidden { display: none; }
-        #status { font-size: 11px; margin-top: 10px; color: #777; font-family: monospace; }
+        .section-title { border-bottom: 2px solid #eee; padding-bottom: 5px; margin: 20px 0 10px; color: var(--a); font-size: 18px; text-align: left; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
@@ -22,45 +25,49 @@
     <div id="login-view">
         <h2>Bright-CBT</h2>
         <input type="text" id="userInput" placeholder="REG NO OR ADMIN KEY" style="text-transform: uppercase;">
-        <button id="entryBtn" class="btn-blue">Login to Portal</button>
-        <p style="font-size: 13px;">New? <a href="#" onclick="showView('reg-view')">Register</a></p>
-    </div>
-
-    <div id="reg-view" class="hidden">
-        <h2>Register</h2>
-        <input type="text" id="regName" placeholder="Full Name">
-        <button id="createBtn" style="background: #28a745;">Get Reg No</button>
-        <p><a href="#" onclick="showView('login-view')">Back</a></p>
+        <button id="entryBtn" class="btn-blue">Login</button>
     </div>
 
     <div id="admin-view" class="hidden">
-        <h2 style="color: var(--admin);">Admin Panel</h2>
+        <h2 style="color:var(--a)">Master Admin</h2>
+        
+        <div class="section-title">Step 1: Add Students</div>
+        <input type="text" id="stuName" placeholder="Full Name (e.g. Amerijoye)">
+        <input type="text" id="stuID" placeholder="Custom ID (e.g. JSS1/001)">
+        <button id="addStuBtn" class="btn-green">Create Account</button>
+
+        <div class="section-title">Step 2: Add Questions</div>
         <select id="subSelect">
             <option value="Basic Science">Basic Science</option>
             <option value="Mathematics">Mathematics</option>
             <option value="History">History</option>
-            <option value="English">English</option>
         </select>
-        <textarea id="qText" placeholder="Enter Question"></textarea>
-        <input type="text" id="optA" placeholder="Option A">
-        <input type="text" id="optB" placeholder="Option B">
-        <input type="text" id="optC" placeholder="Option C">
-        <input type="text" id="optD" placeholder="Option D">
+        <textarea id="qText" placeholder="The Question"></textarea>
+        <input type="text" id="optA" placeholder="A"><input type="text" id="optB" placeholder="B">
+        <input type="text" id="optC" placeholder="C"><input type="text" id="optD" placeholder="D">
         <select id="correctAns">
-            <option value="">Correct Answer</option>
-            <option value="A">A</option><option value="B">B</option>
+            <option value="A">Answer: A</option><option value="B">B</option>
             <option value="C">C</option><option value="D">D</option>
         </select>
-        <button id="saveBtn" class="btn-purple">Upload Question</button>
-        <button onclick="location.reload()" style="background:#333; font-size:12px;">Logout</button>
+        <button id="saveQBtn" class="btn-purple">Upload Question</button>
+
+        <div class="section-title">Step 3: Exam Results</div>
+        <button id="loadResBtn" style="background:#333">Refresh Scores</button>
+        <div id="res-box">
+            <table>
+                <thead><tr><th>Name</th><th>ID</th><th>Score</th></tr></thead>
+                <tbody id="resTable"></tbody>
+            </table>
+        </div>
+
+        <button onclick="location.reload()" style="background:#dc3545; margin-top:30px;">Logout Admin</button>
     </div>
-    <div id="status">System Ready</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { initializeFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
@@ -75,14 +82,15 @@
     const auth = getAuth(app);
     const db = initializeFirestore(app, { experimentalForceLongPolling: true });
 
-    window.showView = (id) => {
-        document.querySelectorAll('.card > div:not(#status)').forEach(v => v.classList.add('hidden'));
+    const show = (id) => {
+        document.querySelectorAll('.card > div').forEach(v => v.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     };
 
+    // --- ACCESS ---
     document.getElementById('entryBtn').onclick = async () => {
         const val = document.getElementById('userInput').value.trim().toUpperCase();
-        if(val === "ADMIN123") return showView('admin-view');
+        if(val === "ADMIN123") return show('admin-view');
         
         try {
             const snap = await getDoc(doc(db, "students", val));
@@ -94,19 +102,44 @@
         } catch(e) { alert("Error: " + e.code); }
     };
 
-    document.getElementById('saveBtn').onclick = async () => {
+    // --- ADD STUDENT ---
+    document.getElementById('addStuBtn').onclick = async () => {
+        const name = document.getElementById('stuName').value.trim();
+        let id = document.getElementById('stuID').value.trim().toUpperCase();
+        if(!name || !id) return alert("Fill Name and ID");
+        
+        const email = id.replace(/\//g, ".") + "@cbt.com";
+        try {
+            await createUserWithEmailAndPassword(auth, email, "password123");
+            await setDoc(doc(db, "students", id), { name, email, score: 0, hasFinished: false });
+            alert("Student added! ID: " + id);
+            document.getElementById('stuName').value = ""; document.getElementById('stuID').value = "";
+        } catch(e) { alert("Fail: " + e.code); }
+    };
+
+    // --- SAVE QUESTION ---
+    document.getElementById('saveQBtn').onclick = async () => {
         const qID = "Q" + Date.now();
         await setDoc(doc(db, "questions", qID), {
             subject: document.getElementById('subSelect').value,
             question: document.getElementById('qText').value,
-            A: document.getElementById('optA').value,
-            B: document.getElementById('optB').value,
-            C: document.getElementById('optC').value,
-            D: document.getElementById('optD').value,
+            A: document.getElementById('optA').value, B: document.getElementById('optB').value,
+            C: document.getElementById('optC').value, D: document.getElementById('optD').value,
             answer: document.getElementById('correctAns').value
         });
-        alert("Saved to " + document.getElementById('subSelect').value);
-        document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+        alert("Question Saved!");
+        document.getElementById('qText').value = "";
+    };
+
+    // --- LOAD RESULTS ---
+    document.getElementById('loadResBtn').onclick = async () => {
+        const snap = await getDocs(collection(db, "students"));
+        const table = document.getElementById('resTable');
+        table.innerHTML = "";
+        snap.forEach(d => {
+            const s = d.data();
+            table.innerHTML += `<tr><td>${s.name}</td><td>${d.id}</td><td>${s.score}</td></tr>`;
+        });
     };
 </script>
 </body>
