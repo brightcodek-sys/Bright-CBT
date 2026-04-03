@@ -6,74 +6,93 @@
     <title>Bright-CBT | Exam</title>
     <style>
         body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .box { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; }
-        .opt { display: block; background: #eee; padding: 10px; margin: 10px 0; border-radius: 8px; cursor: pointer; }
-        .opt:hover { background: #ddd; }
-        #submitBtn { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; }
+        .box { background: white; padding: 25px; border-radius: 12px; max-width: 500px; margin: auto; text-align: center; }
+        .opt { display: block; background: #eee; padding: 15px; margin: 10px 0; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+        .opt:hover { border-color: #007bff; background: #eef; }
+        .hidden { display: none; }
+        button { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h3 id="qDisplay">Loading questions...</h3>
-        <div id="options"></div>
-        <p>Question <span id="qNum">0</span></p>
-        <button id="submitBtn" class="hidden">Submit Exam</button>
+
+<div class="box">
+    <div id="subject-view">
+        <h3>Select Your Subject</h3>
+        <button onclick="startExam('Basic Science')" style="margin-bottom:10px;">Basic Science</button>
+        <button onclick="startExam('Mathematics')" style="margin-bottom:10px; background:#007bff;">Mathematics</button>
+        <button onclick="startExam('History')" style="background:purple;">History</button>
     </div>
+
+    <div id="quiz-view" class="hidden">
+        <h4 id="qText">Loading...</h4>
+        <div id="options"></div>
+        <p style="font-size: 12px; color: #666;">Question <span id="qNum">0</span></p>
+    </div>
+
+    <div id="finish-view" class="hidden">
+        <h2>Exam Over!</h2>
+        <p>Your score has been sent to the teacher.</p>
+        <button onclick="window.location.href='index.html'">Return to Portal</button>
+    </div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { initializeFirestore, doc, collection, getDocs, updateDoc, persistentLocalCache, persistentMultipleTabManager } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeFirestore, doc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = { /* SAME AS ABOVE */ };
+    const firebaseConfig = { /* USE YOUR CONFIG FROM INDEX */ };
     const app = initializeApp(firebaseConfig);
-    const db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
+    const db = initializeFirestore(app, { experimentalForceLongPolling: true });
 
     let questions = [];
     let currentIdx = 0;
     let score = 0;
-    const studentID = localStorage.getItem('studentID');
+    const studentID = localStorage.getItem('currentStudent');
 
-    async function load() {
+    window.startExam = async (subject) => {
+        document.getElementById('subject-view').classList.add('hidden');
+        document.getElementById('quiz-view').classList.remove('hidden');
+        
         const snap = await getDocs(collection(db, "questions"));
-        snap.forEach(d => questions.push(d.data()));
-        showQuestion();
-    }
+        snap.forEach(d => {
+            if(d.data().subject === subject) questions.push(d.data());
+        });
 
-    function showQuestion() {
+        if(questions.length === 0) {
+            alert("No questions for " + subject);
+            location.reload();
+        } else {
+            render();
+        }
+    };
+
+    function render() {
         if(currentIdx >= questions.length) {
-            document.getElementById('qDisplay').innerText = "Exam Finished!";
-            document.getElementById('options').innerHTML = "";
-            document.getElementById('submitBtn').classList.remove('hidden');
+            submitScore();
             return;
         }
-        let q = questions[currentIdx];
-        document.getElementById('qDisplay').innerText = q.q;
-        document.getElementById('qNum').innerText = (currentIdx + 1);
+        const q = questions[currentIdx];
+        document.getElementById('qText').innerText = q.question;
+        document.getElementById('qNum').innerText = (currentIdx + 1) + "/" + questions.length;
+        
         let html = "";
         ['A','B','C','D'].forEach(letter => {
-            html += `<div class="opt" onclick="window.check('${letter}')">${letter}: ${q[letter]}</div>`;
+            html += `<div class="opt" onclick="check('${letter}', '${q.answer}')">${letter}. ${q[letter]}</div>`;
         });
         document.getElementById('options').innerHTML = html;
     }
 
-    window.check = (choice) => {
-        if(choice === questions[currentIdx].ans) score++;
+    window.check = (picked, correct) => {
+        if(picked === correct) score++;
         currentIdx++;
-        showQuestion();
+        render();
     };
 
-    document.getElementById('submitBtn').onclick = async () => {
-        try {
-            await updateDoc(doc(db, "students", studentID), { score: score, hasFinished: true });
-            alert("Score Saved: " + score);
-            window.location.href = "index.html";
-        } catch(e) { alert("Error saving score. Please show this screen to the teacher. Score: " + score); }
-    };
-
-    load();
+    async function submitScore() {
+        document.getElementById('quiz-view').classList.add('hidden');
+        document.getElementById('finish-view').classList.remove('hidden');
+        await updateDoc(doc(db, "students", studentID), { score: score });
+    }
 </script>
 </body>
 </html>
