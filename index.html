@@ -6,7 +6,7 @@
     <title>Bright-CBT | Portal</title>
     <style>
         :root { --primary: #007bff; --success: #28a745; --admin: #6f42c1; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 10px; box-sizing: border-box;}
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
         .container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
         input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px; color: white; transition: 0.3s; }
@@ -14,31 +14,29 @@
         .btn-reg { background: var(--success); }
         .btn-admin { background: var(--admin); }
         .hidden { display: none; }
-        #debugLog { background: #333; color: #0f0; font-family: monospace; font-size: 10px; padding: 10px; margin-top: 20px; border-radius: 5px; text-align: left; overflow-x: auto; display: none; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        #debugLog { background: #1a1a1a; color: #00ff00; font-family: 'Courier New', monospace; font-size: 11px; padding: 12px; margin-top: 20px; border-radius: 8px; text-align: left; max-height: 150px; overflow-y: auto; border: 1px solid #444; }
+        .status-pill { font-size: 11px; padding: 5px 12px; border-radius: 20px; background: #eee; margin-bottom: 15px; display: inline-block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="font-size: 11px; margin-bottom: 15px; background: #eee; display: inline-block; padding: 5px 15px; border-radius: 20px;">
-        <span id="statusDot" style="height:8px; width:8px; border-radius:50%; display:inline-block; margin-right:5px; background:#28a745;"></span>
-        <span id="statusText">Ready</span>
+    <div class="status-pill">
+        <span id="dot" style="height:8px; width:8px; border-radius:50%; display:inline-block; background:#bbb;"></span>
+        <span id="status">Checking Network...</span>
     </div>
 
     <div id="loginView">
         <h2>Bright-CBT</h2>
-        <p style="font-size: 13px; color: #666;">Enter Reg No or Admin Key</p>
-        <input type="text" id="loginID" placeholder="REG NO / KEY" style="text-transform: uppercase;">
+        <input type="text" id="loginID" placeholder="REG NO / ADMIN KEY" style="text-transform: uppercase;">
         <button id="loginBtn" class="btn-login">Login / Admin</button>
-        <p style="font-size: 14px; margin-top: 15px;">New Student? <a href="#" onclick="showView('regView')">Register here</a></p>
+        <p style="font-size: 14px;">New? <a href="#" onclick="showView('regView')">Register here</a></p>
     </div>
 
     <div id="regView" class="hidden">
-        <h2>Register</h2>
-        <input type="text" id="studentName" placeholder="Full Name">
-        <button id="regBtn" class="btn-reg">Create Account</button>
+        <h2>Student Registration</h2>
+        <input type="text" id="studentName" placeholder="Enter Full Name">
+        <button id="regBtn" class="btn-reg">Generate ID</button>
         <div id="regResult" class="hidden" style="background:#fff3cd; padding:15px; margin-top:10px; border-radius:8px; border: 1px dashed #856404;">
             <p>Your ID: <strong id="displayID" style="color:red;"></strong></p>
             <button onclick="location.reload()" style="background:#6c757d; font-size:12px;">Back to Login</button>
@@ -47,31 +45,35 @@
     </div>
 
     <div id="adminView" class="hidden">
-        <h2 style="color:var(--admin)">Admin</h2>
-        <button onclick="showAdminTab('addQuest')" style="background:#333; font-size:11px; width:48%;">Add Q</button>
-        <button onclick="loadResults()" style="background:#333; font-size:11px; width:48%;">Results</button>
-
-        <div id="addQuest" style="margin-top:15px;">
-            <textarea id="qText" placeholder="Question"></textarea>
+        <h2 style="color:var(--admin)">Admin Dashboard</h2>
+        <div style="display:flex; gap:5px; margin-bottom:10px;">
+            <button onclick="showAdminTab('addQuest')" style="background:#333; font-size:11px;">Add Question</button>
+            <button onclick="loadResults()" style="background:#333; font-size:11px;">View Results</button>
+        </div>
+        <div id="addQuest">
+            <textarea id="qText" placeholder="Question Text"></textarea>
             <input type="text" id="optA" placeholder="A"><input type="text" id="optB" placeholder="B">
             <input type="text" id="optC" placeholder="C"><input type="text" id="optD" placeholder="D">
             <select id="correctOpt"><option value="">Correct Answer</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
-            <button id="saveQBtn" class="btn-admin">Save Question</button>
+            <button id="saveQBtn" class="btn-admin">Save to Cloud</button>
         </div>
-
         <div id="viewResults" class="hidden">
-            <table><thead><tr><th>Name</th><th>Score</th></tr></thead><tbody id="resultsTable"></tbody></table>
+            <table style="width:100%; font-size:12px; border-collapse:collapse; margin-top:10px;">
+                <thead><tr style="background:#eee;"><th>Name</th><th>Score</th></tr></thead>
+                <tbody id="resultsTable"></tbody>
+            </table>
         </div>
-        <button onclick="location.reload()" style="background:#dc3545; font-size:12px;">Logout</button>
+        <button onclick="location.reload()" style="background:#dc3545; margin-top:20px; font-size:12px;">Logout</button>
     </div>
 
-    <div id="debugLog"></div>
+    <div id="debugLog">System Initializing...</div>
+    <button id="forceSync" style="background:#666; font-size:10px; padding:5px; margin-top:5px;">Manual Sync (Fix Error)</button>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc, collection, getDocs, terminate, clearIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
@@ -85,22 +87,22 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     
-    // THE FIX: forceLongPolling avoids "Connection Error" on Nigerian Mobile Hotspots
-    const db = initializeFirestore(app, {
+    // NETWORK OVERRIDE: Forces hotspot to work by avoiding WebSockets
+    let db = initializeFirestore(app, {
         experimentalForceLongPolling: true,
         localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
     });
 
     const ADMIN_KEY = "ADMIN123";
 
-    function log(msg) {
+    function log(msg, color="#0f0") {
         const d = document.getElementById('debugLog');
-        d.style.display = "block";
-        d.innerHTML += "> " + msg + "<br>";
+        d.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+        d.scrollTop = d.scrollHeight;
     }
 
     window.showView = (id) => {
-        document.querySelectorAll('.container > div:not(.status-bar):not(#debugLog)').forEach(div => div.classList.add('hidden'));
+        document.querySelectorAll('.container > div:not(.status-pill):not(#debugLog)').forEach(div => div.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
     };
 
@@ -110,6 +112,16 @@
         document.getElementById(tab).classList.remove('hidden');
     };
 
+    // MANUAL SYNC BUTTON (For clearing connection errors)
+    document.getElementById('forceSync').onclick = async () => {
+        log("Resetting Network Layer...", "#ff0");
+        try {
+            await terminate(db);
+            await clearIndexedDbPersistence(db);
+            location.reload();
+        } catch(e) { log("Sync Failed: " + e.code, "red"); }
+    };
+
     // --- LOGIN ---
     document.getElementById('loginBtn').onclick = async () => {
         const val = document.getElementById('loginID').value.trim().toUpperCase();
@@ -117,21 +129,21 @@
         if(!val) return alert("Enter ID");
 
         try {
-            log("Attempting Login...");
+            log("Fetching Student Record...");
             const docSnap = await getDoc(doc(db, "students", val));
             if(docSnap.exists()) {
                 const d = docSnap.data();
                 await signInWithEmailAndPassword(auth, d.email, "password123");
                 localStorage.setItem('currentStudent', val);
                 window.location.href = "exam.html";
-            } else { alert("ID Not Found"); }
+            } else { log("ID Not Found", "red"); alert("ID Not Found"); }
         } catch(e) {
-            log("ERROR: " + e.code);
-            alert("Connection Error! Look at the green box below for the reason.");
+            log("CONNECTION ERROR: " + e.code, "red");
+            if(e.code === 'auth/network-request-failed') log("Hint: Check mum's hotspot data plan!", "#ff0");
         }
     };
 
-    // --- REGISTER ---
+    // --- REGISTRATION ---
     document.getElementById('regBtn').onclick = async () => {
         const name = document.getElementById('studentName').value.trim();
         if(!name) return alert("Enter Name");
@@ -139,35 +151,30 @@
         const email = id.replace(/\//g, ".") + "@cbt.com";
 
         try {
-            log("Registering...");
+            log("Registering User...");
             await createUserWithEmailAndPassword(auth, email, "password123");
             await setDoc(doc(db, "students", id), { studentName: name, email: email, score: 0, hasFinished: false });
             document.getElementById('displayID').innerText = id;
             document.getElementById('regResult').classList.remove('hidden');
-            log("Success!");
-        } catch(e) { 
-            log("REG ERROR: " + e.code);
-            alert("Reg Failed: " + e.code); 
-        }
+            log("Success!", "lime");
+        } catch(e) { log("REG ERROR: " + e.code, "red"); }
     };
 
     // --- ADMIN SAVE ---
     document.getElementById('saveQBtn').onclick = async () => {
-        const qID = "Q" + Date.now();
         try {
+            const qID = "Q" + Date.now();
             await setDoc(doc(db, "questions", qID), {
                 question: document.getElementById('qText').value,
-                A: document.getElementById('optA').value,
-                B: document.getElementById('optB').value,
-                C: document.getElementById('optC').value,
-                D: document.getElementById('optD').value,
+                A: document.getElementById('optA').value, B: document.getElementById('optB').value,
+                C: document.getElementById('optC').value, D: document.getElementById('optD').value,
                 answer: document.getElementById('correctOpt').value
             });
-            alert("Saved!");
-        } catch(e) { log("SAVE ERROR: " + e.code); }
+            log("Question Saved to Cloud"); alert("Saved!");
+        } catch(e) { log("SAVE ERROR: " + e.code, "red"); }
     };
 
-    // --- ADMIN RESULTS ---
+    // --- VIEW RESULTS ---
     window.loadResults = async () => {
         showAdminTab('viewResults');
         const snap = await getDocs(collection(db, "students"));
@@ -175,9 +182,13 @@
         table.innerHTML = "";
         snap.forEach(doc => {
             const d = doc.data();
-            table.innerHTML += `<tr><td>${d.studentName}</td><td>${d.score}</td></tr>`;
+            table.innerHTML += `<tr style="border-bottom:1px solid #eee;"><td>${d.studentName}</td><td>${d.score}</td></tr>`;
         });
     };
+
+    log("Ready to Connect.");
+    document.getElementById('status').innerText = "Online (Tough Mode)";
+    document.getElementById('dot').style.background = "#28a745";
 </script>
 </body>
 </html>
