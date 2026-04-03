@@ -5,47 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bright-CBT | Portal</title>
     <style>
-        :root { --p: #007bff; --s: #28a745; --bg: #f4f7f6; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; margin-top: 10px; }
+        :root { --primary: #007bff; --admin: #6f42c1; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; margin-top: 10px; }
+        .btn-blue { background: var(--primary); }
+        .btn-purple { background: var(--admin); }
         .hidden { display: none; }
-        #debug { font-size: 10px; color: red; margin-top: 10px; background: #eee; padding: 5px; }
+        #status { font-size: 11px; margin-top: 10px; color: #777; font-family: monospace; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <div id="loginView">
-            <h2>Bright-CBT</h2>
-            <input type="text" id="loginID" placeholder="REG NO OR ADMIN KEY" style="text-transform:uppercase">
-            <button id="loginBtn" style="background:var(--p)">Login</button>
-            <p>New? <a href="#" onclick="show('regView')">Register</a></p>
-        </div>
 
-        <div id="regView" class="hidden">
-            <h2>Register</h2>
-            <input type="text" id="studentName" placeholder="Full Name">
-            <button id="regBtn" style="background:var(--s)">Get ID</button>
-            <p><a href="#" onclick="show('loginView')">Back</a></p>
-        </div>
-
-        <div id="adminView" class="hidden">
-            <h2 style="color:purple">Admin</h2>
-            <textarea id="qText" placeholder="Question"></textarea>
-            <input type="text" id="optA" placeholder="A"><input type="text" id="optB" placeholder="B">
-            <input type="text" id="optC" placeholder="C"><input type="text" id="optD" placeholder="D">
-            <input type="text" id="ans" placeholder="Correct Letter (A, B, C, or D)">
-            <button id="saveQ" style="background:purple">Save Question</button>
-            <button onclick="location.reload()" style="background:#666">Logout</button>
-        </div>
-        <div id="debug">System Ready</div>
+<div class="card">
+    <div id="login-view">
+        <h2>Bright-CBT</h2>
+        <input type="text" id="userInput" placeholder="REG NO OR ADMIN KEY" style="text-transform: uppercase;">
+        <button id="entryBtn" class="btn-blue">Login to Portal</button>
+        <p style="font-size: 13px;">New? <a href="#" onclick="showView('reg-view')">Register</a></p>
     </div>
+
+    <div id="reg-view" class="hidden">
+        <h2>Register</h2>
+        <input type="text" id="regName" placeholder="Full Name">
+        <button id="createBtn" style="background: #28a745;">Get Reg No</button>
+        <p><a href="#" onclick="showView('login-view')">Back</a></p>
+    </div>
+
+    <div id="admin-view" class="hidden">
+        <h2 style="color: var(--admin);">Admin Panel</h2>
+        <select id="subSelect">
+            <option value="Basic Science">Basic Science</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="History">History</option>
+            <option value="English">English</option>
+        </select>
+        <textarea id="qText" placeholder="Enter Question"></textarea>
+        <input type="text" id="optA" placeholder="Option A">
+        <input type="text" id="optB" placeholder="Option B">
+        <input type="text" id="optC" placeholder="Option C">
+        <input type="text" id="optD" placeholder="Option D">
+        <select id="correctAns">
+            <option value="">Correct Answer</option>
+            <option value="A">A</option><option value="B">B</option>
+            <option value="C">C</option><option value="D">D</option>
+        </select>
+        <button id="saveBtn" class="btn-purple">Upload Question</button>
+        <button onclick="location.reload()" style="background:#333; font-size:12px;">Logout</button>
+    </div>
+    <div id="status">System Ready</div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { initializeFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCW5QHNyXAEk7O86u0HajGDtnshgej10JE",
@@ -58,56 +73,40 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    // TOUGH NETWORK FIX: Long Polling bypasses most hotspot blocks
-    const db = initializeFirestore(app, {
-        experimentalForceLongPolling: true,
-        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-    });
+    const db = initializeFirestore(app, { experimentalForceLongPolling: true });
 
-    const ADMIN_KEY = "ADMIN123"; 
-
-    window.show = (id) => {
-        document.querySelectorAll('.card > div').forEach(d => d.classList.add('hidden'));
+    window.showView = (id) => {
+        document.querySelectorAll('.card > div:not(#status)').forEach(v => v.classList.add('hidden'));
         document.getElementById(id).classList.remove('hidden');
-        document.getElementById('debug').classList.remove('hidden');
     };
 
-    document.getElementById('loginBtn').onclick = async () => {
-        const val = document.getElementById('loginID').value.trim().toUpperCase();
-        if(val === ADMIN_KEY) return show('adminView');
+    document.getElementById('entryBtn').onclick = async () => {
+        const val = document.getElementById('userInput').value.trim().toUpperCase();
+        if(val === "ADMIN123") return showView('admin-view');
+        
         try {
             const snap = await getDoc(doc(db, "students", val));
-            if(snap.exists()){
+            if(snap.exists()) {
                 await signInWithEmailAndPassword(auth, snap.data().email, "password123");
-                localStorage.setItem('studentID', val);
+                localStorage.setItem('currentStudent', val);
                 window.location.href = "exam.html";
             } else { alert("ID not found"); }
-        } catch(e) { document.getElementById('debug').innerText = "Error: " + e.code; }
+        } catch(e) { alert("Error: " + e.code); }
     };
 
-    document.getElementById('regBtn').onclick = async () => {
-        const name = document.getElementById('studentName').value;
-        const id = "BRIGHT/" + Math.floor(1000 + Math.random()*9000);
-        const email = id.replace(/\//g, ".") + "@cbt.com";
-        try {
-            await createUserWithEmailAndPassword(auth, email, "password123");
-            await setDoc(doc(db, "students", id), { name, email, score: 0 });
-            alert("Your ID is: " + id);
-            location.reload();
-        } catch(e) { document.getElementById('debug').innerText = "Reg Error: " + e.code; }
-    };
-
-    document.getElementById('saveQ').onclick = async () => {
+    document.getElementById('saveBtn').onclick = async () => {
         const qID = "Q" + Date.now();
         await setDoc(doc(db, "questions", qID), {
-            q: document.getElementById('qText').value,
+            subject: document.getElementById('subSelect').value,
+            question: document.getElementById('qText').value,
             A: document.getElementById('optA').value,
             B: document.getElementById('optB').value,
             C: document.getElementById('optC').value,
             D: document.getElementById('optD').value,
-            ans: document.getElementById('ans').value.toUpperCase()
+            answer: document.getElementById('correctAns').value
         });
-        alert("Saved!");
+        alert("Saved to " + document.getElementById('subSelect').value);
+        document.querySelectorAll('input, textarea').forEach(i => i.value = "");
     };
 </script>
 </body>
